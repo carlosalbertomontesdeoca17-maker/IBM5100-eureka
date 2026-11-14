@@ -1078,7 +1078,7 @@
 <body>
   <div class="app-container">
     <header>
-      <div id="cloud-badge" class="cloud-status-badge cloud-offline">NUBE: DESCONECTADA</div>
+      <div id="cloud-badge" class="cloud-status-badge cloud-offline">NUBE: LOCAL ⚪</div>
       <h1>WORKSTATION</h1>
       <p class="subtitle">B-STATION V3.0 // ACADEMIC CONTROL</p>
     </header>
@@ -1087,7 +1087,7 @@
       <button class="tab-btn active" onclick="cambiarVista('cronograma')">CRONOGRAMA</button>
       <button class="tab-btn" onclick="cambiarVista('materias')">MATERIAS</button>
       <button class="tab-btn" onclick="cambiarVista('evaluacion')">EVALUACIÓN</button>
-      <button class="tab-btn" onclick="cambiarVista('datos')">J.A.R.V.I.S</button>
+      <button class="tab-btn" onclick="cambiarVista('datos')">ASISTENTE</button>
       <button class="tab-btn" onclick="cambiarVista('config')">CONFIG</button>
     </nav>
 
@@ -1154,7 +1154,7 @@
       </div>
     </section>
 
-    <!-- 4: CONSOLA & REGISTRO (J.A.R.V.I.S) -->
+    <!-- 4: CONSOLA & REGISTRO (ASISTENTE) -->
     <section id="vista-datos" class="view-panel">
       <div class="chat-box">
         <div class="chat-header">
@@ -1164,7 +1164,7 @@
 
         <div id="chat-history" class="chat-history">
           <div class="chat-msg bot">
-            J.A.R.V.I.S EN LÍNEA.<br>
+            ASISTENTE EN LÍNEA.<br>
             • <strong>Porcentual con link:</strong> <em>"problemario de historia para el 25 de noviembre https://classroom.google.com/... vale 20/30"</em>.<br>
             • <strong>Puntos extra en parciales:</strong> <em>"en P1 de Álgebra saqué 105"</em>.<br>
             • <strong>Desincronizar:</strong> <em>"desincronizar calendar"</em> para marcar todas como pendientes.<br>
@@ -1173,7 +1173,7 @@
         </div>
 
         <div class="chat-input-row">
-          <textarea id="chat-input" placeholder="Ingresa entrega (con link opcional), calificación o comando a J.A.R.V.I.S..." onkeydown="verificarEnter(event)"></textarea>
+          <textarea id="chat-input" placeholder="Ingresa entrega (con link opcional), calificación o comando al ASISTENTE..." onkeydown="verificarEnter(event)"></textarea>
           <button class="btn-32 btn-32-primary" onclick="enviarMensajeChat()">ENVIAR</button>
         </div>
       </div>
@@ -1434,7 +1434,12 @@
       window.open(url, '_blank');
     }
 
-    let tareas = JSON.parse(localStorage.getItem("tareas_workstation")) || [];
+    let tareas = JSON.parse(localStorage.getItem("tareas_workstation_luis")) || [
+      { id: 1, tipo: 'porcentual', materia: "Historia de México Contemporáneo I", actividad: "Infografia visita Museo de la Mujer", fecha: "2026-11-23", hora: "00:00:00", puntos: 10, base: 100, forzarDual: false, urlClassroom: "", califX: null, detalles: "Visita al Museo de la Mujer. Entregar infografía en formato digital con fuentes bibliográficas y fotografías.", completada: false, sincronizada: false, parcial: 3 },
+      { id: 2, tipo: 'porcentual', materia: "Historia de México Contemporáneo I", actividad: "Debate construccion de la nacion", fecha: "2026-11-30", hora: "00:00:00", puntos: 20, base: 100, forzarDual: false, urlClassroom: "", califX: null, detalles: "Debate sobre el proceso de construcción del Estado-Nación mexicano. Preparar argumentos por equipo.", completada: false, sincronizada: false, parcial: 3 },
+      { id: 3, tipo: 'porcentual', materia: "Álgebra", actividad: "Problemario Productos Notables", fecha: "2026-11-28", hora: "00:00:00", puntos: 20, base: 30, forzarDual: false, urlClassroom: "", califX: null, detalles: "Ejercicios de productos notables y factorización. Procedimiento completo a mano con hojas milimétricas.", completada: false, sincronizada: false, parcial: 3 },
+      { id: 4, tipo: 'ordinal', materia: "DHP", actividad: "Firma de cuaderno y glosario", fecha: "2026-11-29", hora: "00:00:00", puntos: 0, base: 0, forzarDual: false, urlClassroom: "", califX: null, detalles: "Revisión de cuaderno completo con firmas y glosario de términos cognitivos del 3er parcial.", completada: false, sincronizada: false, parcial: 3 }
+    ];
 
     tareas = tareas.map(t => ({
       ...t,
@@ -1449,7 +1454,7 @@
       califX: t.califX !== undefined ? t.califX : (t.notaObtenida !== undefined ? t.notaObtenida : null)
     }));
 
-    let calificacionesSemestre = JSON.parse(localStorage.getItem("calif_semestre_workstation")) || {};
+    let calificacionesSemestre = JSON.parse(localStorage.getItem("calif_semestre_workstation_luis")) || {};
 
     for (let k in calificacionesSemestre) {
       const norm = normalizarMateria(k);
@@ -1472,7 +1477,7 @@
       }
     });
 
-    let pesosParciales = JSON.parse(localStorage.getItem("pesos_parciales_workstation")) || {};
+    let pesosParciales = JSON.parse(localStorage.getItem("pesos_parciales_workstation_luis")) || {};
 
     MATERIAS_OFICIALES.forEach(m => {
       if (!pesosParciales[m]) {
@@ -1489,13 +1494,13 @@
     let tareaEnEspera = null;
     let esperandoConfirmacionReset = false;
     let tokenClient = null;
-    let accessToken = localStorage.getItem("gcal_access_token") || null;
+    let accessToken = localStorage.getItem("gcal_access_token_luis") || null;
     let filtroActual = 'todas';
 
     function guardarLocal(origenRemoto = false) {
-      localStorage.setItem("tareas_workstation", JSON.stringify(tareas));
-      localStorage.setItem("calif_semestre_workstation", JSON.stringify(calificacionesSemestre));
-      localStorage.setItem("pesos_parciales_workstation", JSON.stringify(pesosParciales));
+      localStorage.setItem("tareas_workstation_luis", JSON.stringify(tareas));
+      localStorage.setItem("calif_semestre_workstation_luis", JSON.stringify(calificacionesSemestre));
+      localStorage.setItem("pesos_parciales_workstation_luis", JSON.stringify(pesosParciales));
 
       if (!origenRemoto && db) {
         db.collection("workstation").doc("datos_academicos").set({
@@ -1529,7 +1534,7 @@
 
     function inicializarFirebase() {
       let config = FIREBASE_CONFIG_DEFAULT;
-      const configGuardada = localStorage.getItem("firebase_config_custom");
+      const configGuardada = localStorage.getItem("firebase_config_luis");
       
       if (configGuardada) {
         try {
@@ -1607,7 +1612,7 @@
           throw new Error("El objeto debe contener al menos 'apiKey' y 'projectId'.");
         }
 
-        localStorage.setItem("firebase_config_custom", JSON.stringify(configObj));
+        localStorage.setItem("firebase_config_luis", JSON.stringify(configObj));
         alert("CONFIGURACIÓN DE FIREBASE REGISTRADA. INICIANDO CONEXIÓN...");
         inicializarFirebase();
       } catch (e) {
@@ -1618,7 +1623,7 @@
     function desconectarFirebase() {
       if (confirm("¿Desconectar sincronización en la nube? El sistema volverá a funcionar exclusivamente en modo local.")) {
         if (unsubscribeFirestore) unsubscribeFirestore();
-        localStorage.removeItem("firebase_config_custom");
+        localStorage.removeItem("firebase_config_luis");
         db = null;
         actualizarEstadoNube(false, "Nube desconectada. Modo local activo.");
         alert("NUBE DESCONECTADA.");
@@ -1873,13 +1878,13 @@
     function guardarClientId() {
       const val = document.getElementById("input-client-id").value.trim();
       if (!val) return alert("CLIENT ID INVÁLIDO.");
-      localStorage.setItem("gcal_client_id", val);
+      localStorage.setItem("gcal_client_id_luis", val);
       alert("CLIENT ID REGISTRADO. PROCEDE CON AUTH GOOGLE.");
       configurarClienteOAuth();
     }
 
     function configurarClienteOAuth() {
-      const clientId = localStorage.getItem("gcal_client_id");
+      const clientId = localStorage.getItem("gcal_client_id_luis");
       if (!clientId) return;
 
       if (typeof google === "undefined" || !google.accounts || !google.accounts.oauth2) {
@@ -1893,7 +1898,7 @@
         callback: (resp) => {
           if (resp && resp.access_token) {
             accessToken = resp.access_token;
-            localStorage.setItem("gcal_access_token", accessToken);
+            localStorage.setItem("gcal_access_token_luis", accessToken);
             document.getElementById("auth-status").innerText = "ESTADO: AUTENTICACIÓN ACTIVA CON CALENDAR";
             alert("CONEXIÓN DIRECTA ESTABLECIDA CON GOOGLE CALENDAR.");
           } else if (resp && resp.error) {
@@ -1904,7 +1909,7 @@
     }
 
     function iniciarSesionGoogle() {
-      const clientId = localStorage.getItem("gcal_client_id");
+      const clientId = localStorage.getItem("gcal_client_id_luis");
       if (!clientId) {
         alert("CONFIGURA Y GUARDA TU CLIENT ID PRIMERO.");
         return;
@@ -1924,7 +1929,7 @@
         selectMat.innerHTML = MATERIAS_OFICIALES.map(m => `<option value="${m}">${m.toUpperCase()}</option>`).join("");
       }
 
-      const savedClientId = localStorage.getItem("gcal_client_id");
+      const savedClientId = localStorage.getItem("gcal_client_id_luis");
       if (savedClientId) {
         const input = document.getElementById("input-client-id");
         if (input) input.value = savedClientId;
@@ -1934,7 +1939,7 @@
         document.getElementById("auth-status").innerText = "ESTADO: SESIÓN ACTIVA CON GOOGLE CALENDAR";
       }
 
-      const savedFb = localStorage.getItem("firebase_config_custom");
+      const savedFb = localStorage.getItem("firebase_config_luis");
       if (savedFb) {
         const fbArea = document.getElementById("input-firebase-config");
         if (fbArea) fbArea.value = savedFb;
@@ -1986,7 +1991,7 @@
           return true;
         } else if (res.status === 401) {
           accessToken = null;
-          localStorage.removeItem("gcal_access_token");
+          localStorage.removeItem("gcal_access_token_luis");
           alert("SESIÓN EXPIRADA. AUTORIZA NUEVAMENTE CON AUTH GOOGLE.");
           iniciarSesionGoogle();
           return false;
