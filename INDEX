@@ -1,0 +1,2943 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>C.A.B. // WORKSTATION</title>
+  <!-- Manifiesto y Service Worker para App Nativa -->
+  <link rel="manifest" href="manifest.json">
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
+  </script>
+  <!-- Modo App Nativa Pantalla Completa para Celular -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0b0f19">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <!-- API de Google Calendar -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+  <!-- Firebase SDK para Sincronización en Tiempo Real -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: #151d30;
+      --card-border-default: #2a3a5a;
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.4);
+      --green: #10b981;
+      --green-glow: rgba(16, 185, 129, 0.45);
+      --danger: #ef4444;
+      --danger-glow: rgba(239, 68, 68, 0.35);
+      --amber: #f59e0b;
+      --amber-glow: rgba(245, 158, 11, 0.45);
+      --text-main: #ffffff;
+      --bevel-high: rgba(255, 255, 255, 0.08);
+      --bevel-shadow: rgba(0, 0, 0, 0.6);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Chakra Petch', sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(30, 58, 110, 0.25) 0%, transparent 60%),
+        linear-gradient(to bottom, rgba(255,255,255,0.015) 1px, transparent 1px),
+        linear-gradient(to right, rgba(255,255,255,0.015) 1px, transparent 1px);
+      background-size: 100% 100%, 32px 32px, 32px 32px;
+      color: var(--text-main);
+      padding: 24px 16px;
+      min-height: 100vh;
+    }
+
+    .app-container {
+      max-width: 920px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 20px;
+      text-align: center;
+      padding: 16px 20px;
+      background: linear-gradient(180deg, #162035 0%, #0d1322 100%);
+      border: 1px solid var(--card-border-default);
+      box-shadow: 
+        inset 1px 1px 0px var(--bevel-high),
+        inset -1px -1px 0px var(--bevel-shadow),
+        0 8px 24px rgba(0, 0, 0, 0.4);
+      position: relative;
+    }
+
+    .cloud-status-badge {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 4px 8px;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .cloud-online {
+      color: var(--green);
+      border: 1px solid var(--green);
+      background: rgba(16, 185, 129, 0.15);
+      text-shadow: 0 0 6px rgba(16, 185, 129, 0.5);
+    }
+
+    .cloud-offline {
+      color: #94a3b8;
+      border: 1px solid #475569;
+      background: rgba(15, 23, 42, 0.6);
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      letter-spacing: 4px;
+      color: #ffffff;
+      text-transform: uppercase;
+      display: inline-block;
+      text-shadow: 0 0 14px var(--accent-glow);
+    }
+
+    .subtitle {
+      font-size: 0.82rem;
+      color: var(--accent);
+      letter-spacing: 2px;
+      margin-top: 4px;
+      text-transform: uppercase;
+      font-weight: 700;
+      text-shadow: 0 0 8px rgba(56, 189, 248, 0.3);
+    }
+
+    .nav-tabs {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      margin-bottom: 24px;
+      background: #090d16;
+      padding: 6px;
+      border: 1px solid #1a2333;
+    }
+
+    .tab-btn {
+      padding: 12px 4px;
+      background: linear-gradient(180deg, #1b253a 0%, #111827 100%);
+      border: 1px solid #23314d;
+      color: #ffffff;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      letter-spacing: 0.5px;
+      box-shadow: 
+        inset 1px 1px 0px rgba(255, 255, 255, 0.1),
+        inset -1px -1px 0px rgba(0, 0, 0, 0.5);
+      transition: all 0.15s ease;
+    }
+
+    .tab-btn:hover {
+      color: #fff;
+      border-color: var(--accent);
+      background: #1e2a44;
+    }
+
+    .tab-btn.active {
+      background: linear-gradient(180deg, #0284c7 0%, #0369a1 100%);
+      color: #ffffff;
+      border-color: #38bdf8;
+      box-shadow: 
+        inset 1px 1px 0px rgba(255, 255, 255, 0.3),
+        0 0 14px var(--accent-glow);
+    }
+
+    .view-panel {
+      display: none;
+      animation: panelFade 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .view-panel.active {
+      display: block;
+    }
+
+    @keyframes panelFade {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      border-left: 3px solid var(--accent);
+      padding: 4px 0 4px 12px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    h2 {
+      font-size: 1rem;
+      letter-spacing: 1.5px;
+      color: #ffffff;
+      text-transform: uppercase;
+    }
+
+    .filter-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      background: #0d1527;
+      border: 1px solid #2a3a5a;
+      color: #ffffff;
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 7px 14px;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      transition: all 0.15s ease;
+    }
+
+    .filter-btn:hover {
+      border-color: var(--accent);
+      background: #151d30;
+    }
+
+    .filter-btn.active {
+      background: #1e293b;
+      border-color: var(--accent);
+      color: var(--accent);
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.25);
+    }
+
+    .card {
+      background: linear-gradient(180deg, #172138 0%, #111827 100%);
+      border: 2px solid var(--card-border-default);
+      padding: 18px;
+      margin-bottom: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: 
+        inset 1px 1px 0px var(--bevel-high),
+        inset -1px -1px 0px var(--bevel-shadow),
+        0 6px 16px rgba(0, 0, 0, 0.35);
+      transition: border-color 0.4s ease, box-shadow 0.4s ease, transform 0.2s ease, opacity 0.3s ease, filter 0.3s ease;
+      position: relative;
+    }
+
+    .card.sync-ok {
+      border-color: var(--green) !important;
+      animation: pulseGreenBorder 3.5s infinite alternate ease-in-out;
+    }
+
+    @keyframes pulseGreenBorder {
+      0% {
+        box-shadow: inset 1px 1px 0px var(--bevel-high), inset -1px -1px 0px var(--bevel-shadow), 0 0 6px rgba(16, 185, 129, 0.25);
+      }
+      100% {
+        box-shadow: inset 1px 1px 0px var(--bevel-high), inset -1px -1px 0px var(--bevel-shadow), 0 0 16px rgba(16, 185, 129, 0.55);
+      }
+    }
+
+    .card.sync-pending {
+      border-color: var(--danger) !important;
+      animation: pulseRedBorder 3s infinite alternate ease-in-out;
+    }
+
+    @keyframes pulseRedBorder {
+      0% {
+        box-shadow: inset 1px 1px 0px var(--bevel-high), inset -1px -1px 0px var(--bevel-shadow), 0 0 6px rgba(239, 68, 68, 0.25);
+      }
+      100% {
+        box-shadow: inset 1px 1px 0px var(--bevel-high), inset -1px -1px 0px var(--bevel-shadow), 0 0 16px rgba(239, 68, 68, 0.55);
+      }
+    }
+
+    .card.completada {
+      background: linear-gradient(180deg, #0d121c 0%, #080b11 100%) !important;
+      border-color: #1e293b !important;
+      box-shadow: none !important;
+      animation: none !important;
+      opacity: 0.38;
+      filter: grayscale(100%) contrast(0.8);
+      transform: none !important;
+    }
+
+    .card.borrando {
+      animation: shrinkOut 0.2s forwards;
+    }
+
+    @keyframes shrinkOut {
+      to { opacity: 0; transform: scale(0.95); height: 0; margin: 0; padding: 0; }
+    }
+
+    .card-top {
+      font-size: 1.05rem;
+      line-height: 1.4;
+      font-weight: 600;
+      color: #ffffff;
+    }
+
+    .materia-tag {
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-right: 6px;
+    }
+
+    .actividad-texto {
+      color: #ffffff;
+    }
+
+    .card-timing {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .fecha-destacada {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .countdown-timer {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fbbf24;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(251, 191, 36, 0.5);
+      padding: 6px 14px;
+      display: inline-block;
+      letter-spacing: 1px;
+      box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.6), 0 0 10px rgba(251, 191, 36, 0.25);
+    }
+
+    .countdown-timer.urgente {
+      color: #ef4444;
+      border-color: #ef4444;
+      box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.6), 0 0 10px rgba(239, 68, 68, 0.4);
+      text-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+    }
+
+    .countdown-timer.zero {
+      color: #94a3b8;
+      border-color: #475569;
+      box-shadow: none;
+    }
+
+    .ordinal-card-box {
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px dashed var(--amber);
+      padding: 10px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge-ordinal {
+      background: linear-gradient(180deg, #b45309 0%, #78350f 100%);
+      border: 1px solid #fbbf24;
+      color: #ffffff;
+      padding: 4px 12px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-shadow: 0 0 6px rgba(251, 191, 36, 0.6);
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.35);
+    }
+
+    .dual-bars-wrapper {
+      background: rgba(11, 16, 28, 0.7);
+      border: 1px solid #1a253a;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .bar-row-block {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .bar-label-sub {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.84rem;
+      color: #ffffff;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .bar-container {
+      width: 100%;
+      height: 15px;
+      background: #080d1a;
+      border: 1px solid #1e293b;
+      position: relative;
+      overflow: hidden;
+      box-shadow: inset 1px 1px 3px rgba(0,0,0,0.8);
+    }
+
+    .bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #0284c7 0%, #38bdf8 100%);
+      transition: width 0.3s ease;
+      box-shadow: 0 0 6px rgba(56, 189, 248, 0.4);
+    }
+
+    .bar-fill.bar-gold {
+      background: linear-gradient(90deg, #d97706 0%, #fbbf24 100%);
+      box-shadow: 0 0 6px rgba(251, 191, 36, 0.4);
+    }
+
+    .bar-fill.warning {
+      background: linear-gradient(90deg, #d97706 0%, #fbbf24 100%);
+      box-shadow: 0 0 6px rgba(251, 191, 36, 0.4);
+    }
+
+    .bar-fill.success {
+      background: linear-gradient(90deg, #059669 0%, #10b981 100%);
+      box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
+    }
+
+    .input-mini {
+      width: 60px;
+      background: #070b14;
+      border: 1px solid #2a3a5a;
+      color: #ffffff;
+      padding: 5px 6px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      text-align: center;
+      outline: none;
+    }
+
+    .input-mini:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 6px var(--accent-glow);
+    }
+
+    .btn-mode-toggle {
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: var(--accent);
+      font-size: 0.74rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-mode-toggle:hover {
+      background: var(--accent);
+      color: #0b0f19;
+      box-shadow: 0 0 8px var(--accent-glow);
+    }
+
+    .pct-destacado {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #38bdf8;
+      text-shadow: 0 0 8px rgba(56, 189, 248, 0.45);
+      letter-spacing: 0.5px;
+    }
+
+    .card-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 4px;
+      padding-top: 10px;
+      border-top: 1px solid #1a2333;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .card-meta {
+      font-size: 0.85rem;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      font-weight: 600;
+    }
+
+    .badge {
+      padding: 4px 10px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      display: inline-block;
+    }
+
+    .badge-sync-ok {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid var(--green);
+      color: var(--green);
+      text-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
+    }
+
+    .badge-sync-pending {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid var(--danger);
+      color: var(--danger);
+      text-shadow: 0 0 6px rgba(239, 68, 68, 0.4);
+    }
+
+    .card-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .card-details-drawer {
+      margin-top: 8px;
+      padding: 14px;
+      background: #090e1a;
+      border: 1px solid #1c2b46;
+      border-left: 3px solid var(--accent);
+      animation: panelFade 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .details-top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .details-title-tag {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 1px;
+    }
+
+    .details-text-content {
+      font-size: 0.85rem;
+      line-height: 1.5;
+      color: #cbd5e1;
+      white-space: pre-wrap;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .btn-32 {
+      background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+      border: 1px solid #334155;
+      color: #ffffff;
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 8px 12px;
+      letter-spacing: 1px;
+      box-shadow: 
+        inset 1px 1px 0px var(--bevel-high),
+        inset -1px -1px 0px var(--bevel-shadow),
+        0 2px 6px rgba(0,0,0,0.4);
+      transition: all 0.1s ease;
+    }
+
+    .btn-32:hover {
+      border-color: var(--accent);
+      color: #ffffff;
+      background: #25334c;
+    }
+
+    .btn-32:active {
+      box-shadow: inset 1px 1px 3px rgba(0,0,0,0.8);
+      transform: translateY(1px);
+    }
+
+    .btn-32-primary {
+      background: linear-gradient(180deg, #0284c7 0%, #0369a1 100%);
+      border-color: #38bdf8;
+      color: #ffffff;
+      box-shadow: 
+        inset 1px 1px 0px rgba(255,255,255,0.25),
+        0 0 10px var(--accent-glow);
+    }
+
+    .btn-32-primary:hover {
+      background: #0ea5e9;
+      border-color: #7dd3fc;
+    }
+
+    .btn-32-danger {
+      background: linear-gradient(180deg, #37151e 0%, #1c0b0f 100%);
+      border-color: #881337;
+      color: #f43f5e;
+    }
+
+    .btn-32-danger:hover {
+      background: #e11d48;
+      border-color: #fda4af;
+      color: #ffffff;
+    }
+
+    .toggle-crt {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 24px;
+      height: 24px;
+      background: #0b0f19;
+      border: 2px solid #334155;
+      cursor: pointer;
+      display: grid;
+      place-content: center;
+      box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.7);
+      transition: all 0.2s ease;
+    }
+
+    .toggle-crt:checked {
+      border-color: var(--accent);
+      background: #0284c7;
+      box-shadow: 0 0 8px var(--accent-glow);
+    }
+
+    .toggle-crt:checked::after {
+      content: "";
+      width: 10px;
+      height: 10px;
+      background: #ffffff;
+      box-shadow: 0 0 4px #ffffff;
+    }
+
+    .materia-bloque {
+      margin-bottom: 28px;
+      background: #0c1220;
+      border: 1px solid #1a2438;
+      padding: 18px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+    }
+
+    .materia-header {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #22304d;
+      padding-bottom: 14px;
+    }
+
+    .materia-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .materia-titulo {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+    }
+
+    .materia-universal-bar {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .eval-materia-card {
+      background: #0d1424;
+      border: 1px solid #1e293b;
+      padding: 18px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.45);
+    }
+
+    .eval-materia-header {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 14px;
+      border-bottom: 1px solid #22304d;
+      padding-bottom: 12px;
+    }
+
+    .eval-materia-topline {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .eval-grade-display {
+      font-size: 1.55rem;
+      font-weight: 700;
+      color: #38bdf8;
+      text-shadow: 0 0 10px rgba(56, 189, 248, 0.45);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .coverage-meta-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.84rem;
+      color: #94a3b8;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      margin-top: 4px;
+    }
+
+    .eval-activities-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .eval-act-card {
+      background: #111827;
+      border: 1px solid #1f293d;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .eval-act-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      margin-top: 16px;
+      margin-bottom: 24px;
+      border: 1px solid var(--card-border-default);
+      background: #0a0f1d;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+
+    .matrix-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.88rem;
+    }
+
+    .matrix-table th {
+      background: #111a2e;
+      color: var(--accent);
+      padding: 16px 14px;
+      border-bottom: 2px solid #1e293b;
+      letter-spacing: 1px;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .matrix-table th:first-child {
+      text-align: left;
+    }
+
+    .matrix-table td {
+      padding: 16px 14px;
+      border-bottom: 1px solid #192338;
+      color: #ffffff;
+      vertical-align: middle;
+    }
+
+    .matrix-table tr:hover {
+      background: rgba(56, 189, 248, 0.04);
+    }
+
+    .partial-cell-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .input-cell {
+      width: 80px;
+      background: #060913;
+      border: 1px solid #23314d;
+      color: #ffffff;
+      padding: 6px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      text-align: center;
+      outline: none;
+      height: 36px;
+    }
+
+    .input-cell:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 6px var(--accent-glow);
+    }
+
+    .p3-grade-display {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #38bdf8;
+      text-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .weight-box {
+      background: #080d18;
+      border: 1px solid #1e2d48;
+      padding: 3px 8px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .weight-label {
+      font-size: 0.68rem;
+      color: var(--accent);
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .input-weight {
+      width: 74px;
+      background: #0c1220;
+      border: 1px solid #23314d;
+      color: #fbbf24;
+      font-size: 0.92rem;
+      font-weight: 700;
+      text-align: center;
+      padding: 3px 4px;
+      outline: none;
+    }
+
+    .input-weight:focus {
+      border-color: #fbbf24;
+      box-shadow: 0 0 6px rgba(251, 191, 36, 0.4);
+    }
+
+    .weight-unit {
+      font-size: 0.82rem;
+      color: #fbbf24;
+      font-weight: 700;
+    }
+
+    .hud-promedio-box {
+      background: linear-gradient(180deg, #16243d 0%, #0c1322 100%);
+      border: 2px solid var(--accent);
+      padding: 20px;
+      text-align: center;
+      margin-top: 24px;
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.25), inset 1px 1px 0px rgba(255,255,255,0.1);
+    }
+
+    .hud-title {
+      font-size: 0.95rem;
+      color: var(--accent);
+      letter-spacing: 2px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .hud-number {
+      font-size: 3rem;
+      font-weight: 700;
+      color: #ffffff;
+      text-shadow: 0 0 16px var(--accent-glow);
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .hud-meta {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      letter-spacing: 1px;
+    }
+
+    .chat-box {
+      background: #0d1322;
+      border: 1px solid var(--card-border-default);
+      padding: 16px;
+      margin-bottom: 24px;
+      box-shadow: inset 1px 1px 0px var(--bevel-high), 0 6px 16px rgba(0, 0, 0, 0.4);
+    }
+
+    .chat-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid #1e293b;
+      padding-bottom: 10px;
+      margin-bottom: 12px;
+    }
+
+    .terminal-tag {
+      background: var(--accent);
+      color: #000;
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+
+    .chat-history {
+      max-height: 260px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-right: 4px;
+      margin-bottom: 12px;
+    }
+
+    .chat-msg {
+      padding: 10px 14px;
+      font-size: 0.85rem;
+      line-height: 1.45;
+      border: 1px solid #1e293b;
+      max-width: 90%;
+    }
+
+    .chat-msg.bot {
+      background: #111827;
+      color: #ffffff;
+      border-left: 3px solid var(--accent);
+      align-self: flex-start;
+    }
+
+    .chat-msg.user {
+      background: #032b43;
+      color: #ffffff;
+      border-right: 3px solid var(--accent);
+      align-self: flex-end;
+    }
+
+    .chat-input-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .chat-input-row textarea {
+      flex: 1;
+      background-color: #080c14;
+      border: 1px solid #23314d;
+      color: #ffffff;
+      padding: 10px 12px;
+      font-size: 0.85rem;
+      resize: none;
+      height: 48px;
+      outline: none;
+    }
+
+    .chat-input-row textarea:focus {
+      border-color: var(--accent);
+    }
+
+    form {
+      background: #111827;
+      border: 1px solid var(--card-border-default);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: inset 1px 1px 0px var(--bevel-high), 0 6px 16px rgba(0, 0, 0, 0.4);
+    }
+
+    label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      letter-spacing: 1px;
+    }
+
+    input, select, textarea {
+      background-color: #080c14;
+      border: 1px solid #23314d;
+      color: #ffffff;
+      padding: 10px 12px;
+      font-size: 0.88rem;
+      outline: none;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--accent);
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .row label {
+      flex: 1;
+    }
+
+    .action-box {
+      background: #111827;
+      border: 1px solid var(--card-border-default);
+      padding: 18px;
+      margin-bottom: 16px;
+      box-shadow: inset 1px 1px 0px var(--bevel-high), 0 6px 16px rgba(0, 0, 0, 0.4);
+    }
+
+    .action-box h3 {
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+      color: var(--accent);
+      letter-spacing: 1.5px;
+    }
+
+    .action-box p {
+      font-size: 0.82rem;
+      color: #ffffff;
+      margin-bottom: 14px;
+      line-height: 1.45;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(5, 8, 15, 0.85);
+      backdrop-filter: blur(4px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      padding: 16px;
+    }
+
+    .modal-container {
+      background: #0f1626;
+      border: 2px solid var(--card-border-default);
+      width: 100%;
+      max-width: 680px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.7), inset 1px 1px 0px var(--bevel-high);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #1e293b;
+      padding-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <header>
+      <div id="cloud-badge" class="cloud-status-badge cloud-offline">NUBE: DESCONECTADA</div>
+      <h1>C.A.B.</h1>
+      <p class="subtitle">B-STATION V3.0 // REAL-TIME</p>
+    </header>
+
+    <nav class="nav-tabs">
+      <button class="tab-btn active" onclick="cambiarVista('cronograma')">CRONOGRAMA</button>
+      <button class="tab-btn" onclick="cambiarVista('materias')">MATERIAS</button>
+      <button class="tab-btn" onclick="cambiarVista('evaluacion')">EVALUACIÓN</button>
+      <button class="tab-btn" onclick="cambiarVista('datos')">J.A.R.V.I.S</button>
+      <button class="tab-btn" onclick="cambiarVista('config')">CONFIG</button>
+    </nav>
+
+    <!-- 1: CRONOGRAMA -->
+    <section id="vista-cronograma" class="view-panel active">
+      <div class="section-header">
+        <h2>ENTREGAS ACTIVAS // PONDERACIONES</h2>
+        <div style="display:flex; gap:8px;">
+          <button class="btn-32" onclick="abrirEditorManualDirecto()">MODIFICADOR MANUAL</button>
+          <button class="btn-32 btn-32-primary" onclick="sincronizarTodasLasTareas()">TODO A CALENDAR</button>
+        </div>
+      </div>
+
+      <div class="filter-bar">
+        <button class="filter-btn active" id="flt-todas" onclick="setFiltro('todas')">VER TODAS</button>
+        <button class="filter-btn" id="flt-activas" onclick="setFiltro('activas')">ACTIVAS</button>
+        <button class="filter-btn" id="flt-completadas" onclick="setFiltro('completadas')">COMPLETADAS</button>
+      </div>
+
+      <div id="lista-cronograma"></div>
+    </section>
+
+    <!-- 2: MATERIAS (SOLO VISUALIZADOR) -->
+    <section id="vista-materias" class="view-panel">
+      <div class="section-header">
+        <h2>DISTRIBUCIÓN POR ASIGNATURA // VISUALIZADOR</h2>
+      </div>
+      <div id="lista-materias"></div>
+    </section>
+
+    <!-- 3: EVALUACIÓN -->
+    <section id="vista-evaluacion" class="view-panel">
+      <div class="section-header">
+        <h2>3ER PARCIAL // RENDIMIENTO</h2>
+      </div>
+      <div id="lista-evaluacion-p3"></div>
+
+      <div class="section-header" style="margin-top: 36px;">
+        <h2>MATRIZ SEMESTRAL DE CALIFICACIONES</h2>
+      </div>
+      <p style="font-size:0.8rem; color:#cbd5e1; margin-bottom:12px;">
+        * Ingresa tus calificaciones en la celda superior (admiten más de 100 para puntos extra) y el valor ponderado en <strong>VALOR %</strong>. El <strong>PROMEDIO SAES</strong> redondea a entero (.6 a .9 sube; .0 a .5 baja).
+      </p>
+
+      <div class="table-container">
+        <table class="matrix-table">
+          <thead>
+            <tr>
+              <th>ASIGNATURA</th>
+              <th>1ER PARCIAL</th>
+              <th>2DO PARCIAL</th>
+              <th>3ER PARCIAL</th>
+              <th>PROMEDIO SAES</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-matriz-body"></tbody>
+        </table>
+      </div>
+
+      <div class="hud-promedio-box">
+        <div class="hud-title">PROMEDIO GENERAL SEMESTRAL SAES</div>
+        <div class="hud-number" id="hud-promedio-general">0.00</div>
+        <div class="hud-meta" id="hud-estado-academico">ESCALA PONDERADA OFICIAL // REDONDEO A ENTEROS POR ASIGNATURA</div>
+      </div>
+    </section>
+
+    <!-- 4: CONSOLA & REGISTRO (J.A.R.V.I.S) -->
+    <section id="vista-datos" class="view-panel">
+      <div class="chat-box">
+        <div class="chat-header">
+          <span class="terminal-tag">SYS // C.A.B.</span>
+          <span style="font-size: 0.85rem; color: #ffffff; font-weight:600;">PROCESADOR Y EDICIÓN REACTIVA</span>
+        </div>
+
+        <div id="chat-history" class="chat-history">
+          <div class="chat-msg bot">
+            J.A.R.V.I.S EN LÍNEA // CECyT 9 1IM9[cite: 1].<br>
+            • <strong>Porcentual con link:</strong> <em>"problemario de historia para el 25 de noviembre https://classroom.google.com/... vale 20/30"</em>.<br>
+            • <strong>Puntos extra en parciales:</strong> <em>"en P1 de Álgebra saqué 105"</em>.<br>
+            • <strong>Desincronizar:</strong> <em>"desincronizar calendar"</em> para marcar todas como pendientes.<br>
+            • <strong>Calificar:</strong> <em>"en infografía de historia saqué 10 de 10"</em>.
+          </div>
+        </div>
+
+        <div class="chat-input-row">
+          <textarea id="chat-input" placeholder="Ingresa entrega (con link opcional), calificación o comando a J.A.R.V.I.S..." onkeydown="verificarEnter(event)"></textarea>
+          <button class="btn-32 btn-32-primary" onclick="enviarMensajeChat()">ENVIAR</button>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <h2>REGISTRO MANUAL DIRECTO (3ER PARCIAL)</h2>
+      </div>
+
+      <form id="form-tarea" onsubmit="agregarTareaManual(event)">
+        <label>CLASIFICACIÓN DE LA ACTIVIDAD:
+          <select id="input-tipo" onchange="alternarCamposPonderacion(this.value)">
+            <option value="porcentual">PORCENTUAL (CON IMPACTO EN CALIFICACIÓN)</option>
+            <option value="ordinal">ORDINAL (FORMATIVA // SIN IMPACTO PONDERADO)</option>
+          </select>
+        </label>
+        <label>ASIGNATURA:
+          <select id="input-materia" required></select>
+        </label>
+        <label>ACTIVIDAD:
+          <input type="text" id="input-actividad" placeholder="Ej. Problemario Productos Notables" required>
+        </label>
+        <label>ENLACE DE CLASSROOM (OPCIONAL):
+          <input type="url" id="input-url-classroom" placeholder="https://classroom.google.com/c/.../a/.../details">
+        </label>
+        <div class="row">
+          <label>FECHA LÍMITE:
+            <input type="date" id="input-fecha" required>
+          </label>
+          <label>HORA DE ENTREGA (DEJAR 00:00 SI NO HAY HORA FIJA):
+            <input type="time" id="input-hora" value="00:00">
+          </label>
+        </div>
+        <div class="row" id="row-ponderacion-inputs">
+          <label>PUNTOS DE LA TAREA (BASE DEL PROFESOR):
+            <input type="number" id="input-puntos" value="20" min="1" max="100">
+          </label>
+          <label>VALOR TOTAL (BASE DEL PROFESOR):
+            <input type="number" id="input-base" value="100" min="1" max="100" title="Si el profesor califica sobre 30, pon 30. Si es estándar, pon 100.">
+          </label>
+        </div>
+        <label>DETALLES / NOTAS DE LA ACTIVIDAD:
+          <textarea id="input-detalles" placeholder="Ingresa especificaciones, rúbricas o apuntes importantes para esta entrega..." style="height:65px; resize:vertical;"></textarea>
+        </label>
+        <button type="submit" class="btn-32 btn-32-primary" style="margin-top:6px;">GUARDAR REGISTRO</button>
+      </form>
+    </section>
+
+    <!-- 5: CONFIGURACIÓN -->
+    <section id="vista-config" class="view-panel">
+      <div class="section-header">
+        <h2>PARÁMETROS DE SISTEMA</h2>
+      </div>
+
+      <!-- PANEL DE CONTROL FIREBASE FIRESTORE EN TIEMPO REAL -->
+      <div class="action-box" style="border-left: 3px solid var(--green);">
+        <h3 style="color:var(--green);">FIREBASE FIRESTORE // NUBE EN TIEMPO REAL</h3>
+        <p>Pega aquí tu <code>firebaseConfig</code> copiado desde la consola de Firebase para activar la sincronización instantánea entre tu celular y tu PC:</p>
+        <textarea id="input-firebase-config" placeholder='Pega aquí tu configuración:
+{
+  "apiKey": "AIzaSy...",
+  "authDomain": "...",
+  "projectId": "...",
+  "storageBucket": "...",
+  "messagingSenderId": "...",
+  "appId": "..."
+}' style="width:100%; height:110px; font-size:0.78rem; margin-bottom:12px;"></textarea>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button type="button" class="btn-32 btn-32-primary" onclick="guardarConfigFirebase()">GUARDAR Y CONECTAR NUBE</button>
+          <button type="button" class="btn-32 btn-32-danger" onclick="desconectarFirebase()">DESCONECTAR NUBE</button>
+        </div>
+        <p id="firebase-status-msg" style="margin-top:12px; font-size:0.85rem; font-weight:700; color:var(--accent);"></p>
+      </div>
+
+      <div class="action-box">
+        <h3>GOOGLE CALENDAR OAUTH 2.0</h3>
+        <p>Configura tu Client ID para habilitar llamadas autorizadas sin intermediarios:</p>
+        <input type="text" id="input-client-id" placeholder="ID...apps.googleusercontent.com" style="width:100%; margin-bottom:12px;">
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button type="button" class="btn-32" onclick="guardarClientId()">GUARDAR ID</button>
+          <button type="button" class="btn-32 btn-32-primary" id="btn-auth-google" onclick="iniciarSesionGoogle()">AUTH GOOGLE</button>
+        </div>
+        <p id="auth-status" style="margin-top:12px; color:var(--accent); font-size:0.85rem; font-weight:600;"></p>
+      </div>
+
+      <div class="action-box">
+        <h3>RESTABLECER SINCRONIZACIÓN DE CALENDAR</h3>
+        <p>Si eliminaste eventos en Google Calendar para reprogramarlos con la nueva hora:</p>
+        <button type="button" class="btn-32 btn-32-primary" onclick="resetearSincronizacionCalendar()">REINICIAR ESTADO CALENDAR (MARCAR COMO PENDIENTES)</button>
+      </div>
+
+      <div class="action-box">
+        <h3>RESPALDO Y MIGRACIÓN DE DATOS</h3>
+        <p>Genera o restaura una copia física estructurada de tu base de datos local:</p>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button type="button" class="btn-32" onclick="exportarTareas()">DESCARGAR JSON</button>
+          <input type="file" id="import-file" style="display:none;" onchange="importarTareas(event)">
+          <button type="button" class="btn-32" onclick="document.getElementById('import-file').click()">CARGAR JSON</button>
+        </div>
+      </div>
+
+      <div class="action-box">
+        <h3>PURGA DE MEMORIA // NUEVO SEMESTRE</h3>
+        <p>Reiniciar semestre actual (borra todas las notas y tareas acumuladas de los 3 parciales):</p>
+        <button type="button" class="btn-32 btn-32-danger" onclick="ejecutarReinicioSemestre()">REINICIO TOTAL DE SEMESTRE</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- MODAL FLOTANTE DE CONTROL MANUAL DE EDICIÓN -->
+  <div id="modal-editor-tarea" class="modal-overlay">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h2 style="font-size:1.05rem;">MODIFICADOR MANUAL // CONTROL DE ENTREGA</h2>
+        <button class="btn-32 btn-32-danger" onclick="cerrarEditorManual()">X</button>
+      </div>
+
+      <label>SELECCIONAR ACTIVIDAD A MODIFICAR:
+        <select id="edit-select-tarea" onchange="cargarDatosEnFormularioEdicion(this.value)"></select>
+      </label>
+
+      <label>ASIGNATURA:
+        <select id="edit-materia"></select>
+      </label>
+
+      <label>NOMBRE DE LA ACTIVIDAD:
+        <input type="text" id="edit-actividad" required>
+      </label>
+
+      <label>ENLACE DE CLASSROOM (OPCIONAL):
+        <input type="url" id="edit-url-classroom" placeholder="Pega aquí la URL de la tarea (https://classroom.google.com/...)">
+      </label>
+
+      <label>CLASIFICACIÓN:
+        <select id="edit-tipo" onchange="alternarCamposEdicionPonderacion(this.value)">
+          <option value="porcentual">PORCENTUAL (CON IMPACTO EN CALIFICACIÓN)</option>
+          <option value="ordinal">ORDINAL (FORMATIVA // SIN IMPACTO PONDERADO)</option>
+        </select>
+      </label>
+
+      <div class="row">
+        <label>FECHA LÍMITE:
+          <input type="date" id="edit-fecha" required>
+        </label>
+        <label>HORA DE ENTREGA:
+          <input type="time" id="edit-hora" value="00:00">
+        </label>
+      </div>
+
+      <div class="row" id="row-edit-ponderacion">
+        <label>PUNTOS (BASE DEL PROFESOR):
+          <input type="number" id="edit-puntos" min="1" max="100">
+        </label>
+        <label>BASE TOTAL (BASE DEL PROFESOR):
+          <input type="number" id="edit-base" min="1" max="100">
+        </label>
+      </div>
+
+      <label>DETALLES / NOTAS EXPLICATIVAS:
+        <textarea id="edit-detalles" style="height:90px; resize:vertical;"></textarea>
+      </label>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; gap:8px; flex-wrap:wrap;">
+        <button class="btn-32 btn-32-primary" style="flex:1;" onclick="guardarEdicionManualTarea()">GUARDAR CAMBIOS</button>
+        <button class="btn-32" onclick="cerrarEditorManual()">CANCELAR</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const FIREBASE_CONFIG_DEFAULT = null; 
+
+    let db = null;
+    let unsubscribeFirestore = null;
+
+    const MATERIAS_OFICIALES = [
+      "Álgebra",
+      "Filosofía I",
+      "Computación Básica I",
+      "Inglés I",
+      "Expresión Oral y Escrita I",
+      "DHP",
+      "Historia de México Contemporáneo I",
+      "Desarrollo Personal",
+      "Orientación Juvenil y Profesional I"
+    ];
+
+    const COLORES_MATERIAS = {
+      "Álgebra": "#f87171",
+      "Expresión Oral y Escrita I": "#3b82f6",
+      "Historia de México Contemporáneo I": "#f97316",
+      "Inglés I": "#facc15",
+      "Filosofía I": "#c084fc",
+      "Computación Básica I": "#34d399",
+      "DHP": "#f472b6",
+      "Desarrollo Personal": "#a3e635",
+      "Orientación Juvenil y Profesional I": "#2dd4bf"
+    };
+
+    function normalizarMateria(nombre) {
+      if (!nombre) return "Álgebra";
+      const m = nombre.toLowerCase().trim();
+      if (m.includes("álgebra") || m.includes("algebra")) return "Álgebra";
+      if (m.includes("filosofía") || m.includes("filosofia") || m.includes("filo")) return "Filosofía I";
+      if (m.includes("computación") || m.includes("computacion") || m.includes("compu")) return "Computación Básica I";
+      if (m.includes("inglés") || m.includes("ingles") || m.includes("english")) return "Inglés I";
+      if (m.includes("expresión") || m.includes("expresion") || m.includes("oral y escrita") || m.includes("redacción") || m.includes("redaccion")) return "Expresión Oral y Escrita I";
+      if (m.includes("dhp") || m.includes("habilidades del pensamiento") || m.includes("pensamiento")) return "DHP";
+      if (m.includes("historia")) return "Historia de México Contemporáneo I";
+      if (m.includes("desarrollo personal") || m.includes("personal") || m.includes("dp")) return "Desarrollo Personal";
+      if (m.includes("orientación") || m.includes("orientacion") || m.includes("juvenil") || m.includes("profesional") || m.includes("oyp") || m.includes("ojp")) return "Orientación Juvenil y Profesional I";
+      return nombre;
+    }
+
+    function getColorMateria(nombre) {
+      const norm = normalizarMateria(nombre);
+      return COLORES_MATERIAS[norm] || "#38bdf8";
+    }
+
+    function valorRealPonderado(val) {
+      const n = parseFloat(val);
+      if (isNaN(n)) return 0;
+      if (Math.abs(n - 100 / 3) < 0.15 || n === 33.3 || n === 33.33 || n === 33.34) return 100 / 3;
+      if (Math.abs(n - 200 / 3) < 0.15 || n === 66.6 || n === 66.66 || n === 66.67) return 200 / 3;
+      return n;
+    }
+
+    function formatearPorcentajeNum(val) {
+      if (val === null || val === undefined || isNaN(val)) return "0";
+      const n = parseFloat(val);
+      if (Math.abs(n - Math.round(n)) < 0.001) return Math.round(n).toString();
+      const fixed = n.toFixed(1);
+      if (fixed.endsWith(".0")) return Math.round(n).toString();
+      return parseFloat(fixed).toString();
+    }
+
+    function formatearPorcentaje(val) {
+      return `${formatearPorcentajeNum(val)}%`;
+    }
+
+    function calcularRedondeoSAES(promedio100) {
+      if (promedio100 === null || isNaN(promedio100)) return null;
+      const prom10 = promedio100 / 10;
+      const enteroBase = Math.floor(prom10);
+      const decimal = Number((prom10 - enteroBase).toFixed(4));
+      
+      let enteroSAES = decimal > 0.5 ? (enteroBase + 1) : enteroBase;
+      enteroSAES = Math.min(Math.max(enteroSAES, 0), 10);
+
+      return {
+        prom10: Number(prom10.toFixed(2)),
+        enteroSAES: enteroSAES,
+        decimal: decimal
+      };
+    }
+
+    function abrirClassroom(url) {
+      if (!url) return;
+      window.open(url, '_blank');
+    }
+
+    let tareas = JSON.parse(localStorage.getItem("tareas_batiz")) || [
+      { id: 1, tipo: 'porcentual', materia: "Historia de México Contemporáneo I", actividad: "Infografia visita Museo de la Mujer", fecha: "2026-11-23", hora: "00:00:00", puntos: 10, base: 100, forzarDual: false, urlClassroom: "", califX: null, detalles: "Visita al Museo de la Mujer. Entregar infografía en formato digital con fuentes bibliográficas y fotografías.", completada: false, sincronizada: false, parcial: 3 },
+      { id: 2, tipo: 'porcentual', materia: "Historia de México Contemporáneo I", actividad: "Debate construccion de la nacion", fecha: "2026-11-30", hora: "00:00:00", puntos: 20, base: 100, forzarDual: false, urlClassroom: "", califX: null, detalles: "Debate sobre el proceso de construcción del Estado-Nación mexicano. Preparar argumentos por equipo.", completada: false, sincronizada: false, parcial: 3 },
+      { id: 3, tipo: 'porcentual', materia: "Álgebra", actividad: "Problemario Productos Notables", fecha: "2026-11-28", hora: "00:00:00", puntos: 20, base: 30, forzarDual: false, urlClassroom: "", califX: null, detalles: "Ejercicios de productos notables y factorización. Procedimiento completo a mano con hojas milimétricas.", completada: false, sincronizada: false, parcial: 3 },
+      { id: 4, tipo: 'ordinal', materia: "DHP", actividad: "Firma de cuaderno y glosario", fecha: "2026-11-29", hora: "00:00:00", puntos: 0, base: 0, forzarDual: false, urlClassroom: "", califX: null, detalles: "Revisión de cuaderno completo con firmas y glosario de términos cognitivos del 3er parcial.", completada: false, sincronizada: false, parcial: 3 }
+    ];
+
+    tareas = tareas.map(t => ({
+      ...t,
+      tipo: t.tipo || 'porcentual',
+      materia: normalizarMateria(t.materia),
+      hora: (t.hora === "12:00:00" || !t.hora) ? "00:00:00" : (t.hora.length === 5 ? t.hora + ":00" : t.hora),
+      puntos: Number(t.puntos) || (t.tipo === 'ordinal' ? 0 : 20),
+      base: Number(t.base) || (t.tipo === 'ordinal' ? 0 : 100),
+      forzarDual: Boolean(t.forzarDual),
+      urlClassroom: t.urlClassroom || "",
+      detalles: t.detalles || "",
+      califX: t.califX !== undefined ? t.califX : (t.notaObtenida !== undefined ? t.notaObtenida : null)
+    }));
+
+    let calificacionesSemestre = JSON.parse(localStorage.getItem("calif_semestre_batiz")) || {};
+
+    for (let k in calificacionesSemestre) {
+      const norm = normalizarMateria(k);
+      if (norm !== k) {
+        if (!calificacionesSemestre[norm]) calificacionesSemestre[norm] = calificacionesSemestre[k];
+        delete calificacionesSemestre[k];
+      }
+    }
+
+    MATERIAS_OFICIALES.forEach(m => {
+      if (!calificacionesSemestre[m]) {
+        calificacionesSemestre[m] = { p1: null, p2: null, extraP3: 0 };
+      } else {
+        if (calificacionesSemestre[m].p1 !== null && calificacionesSemestre[m].p1 <= 10 && calificacionesSemestre[m].p1 > 0) {
+          calificacionesSemestre[m].p1 = Number((calificacionesSemestre[m].p1 * 10).toFixed(1));
+        }
+        if (calificacionesSemestre[m].p2 !== null && calificacionesSemestre[m].p2 <= 10 && calificacionesSemestre[m].p2 > 0) {
+          calificacionesSemestre[m].p2 = Number((calificacionesSemestre[m].p2 * 10).toFixed(1));
+        }
+      }
+    });
+
+    let pesosParciales = JSON.parse(localStorage.getItem("pesos_parciales_batiz")) || {};
+
+    MATERIAS_OFICIALES.forEach(m => {
+      if (!pesosParciales[m]) {
+        pesosParciales[m] = { p1: 33.33, p2: 33.33, p3: 33.33 };
+      } else {
+        ['p1', 'p2', 'p3'].forEach(pk => {
+          if (Math.abs(pesosParciales[m][pk] - 33.34) < 0.1 || Math.abs(pesosParciales[m][pk] - 33.4) < 0.1 || Math.abs(pesosParciales[m][pk] - 33.3) < 0.1) {
+            pesosParciales[m][pk] = 33.33;
+          }
+        });
+      }
+    });
+
+    let tareaEnEspera = null;
+    let esperandoConfirmacionReset = false;
+    let tokenClient = null;
+    let accessToken = localStorage.getItem("gcal_access_token") || null;
+    let filtroActual = 'todas';
+
+    function guardarLocal(origenRemoto = false) {
+      localStorage.setItem("tareas_batiz", JSON.stringify(tareas));
+      localStorage.setItem("calif_semestre_batiz", JSON.stringify(calificacionesSemestre));
+      localStorage.setItem("pesos_parciales_batiz", JSON.stringify(pesosParciales));
+
+      if (!origenRemoto && db) {
+        db.collection("workstation").doc("datos_academicos").set({
+          tareas: tareas,
+          calificacionesSemestre: calificacionesSemestre,
+          pesosParciales: pesosParciales,
+          ultimaActualizacion: Date.now()
+        }).catch(err => {
+          console.error("Error al emitir actualización a Firestore:", err);
+          actualizarEstadoNube(false, "ERROR DE ESCRITURA EN FIRESTORE");
+        });
+      }
+    }
+
+    function actualizarEstadoNube(conectado, mensaje = "") {
+      const badge = document.getElementById("cloud-badge");
+      const msgStatus = document.getElementById("firebase-status-msg");
+      if (badge) {
+        if (conectado) {
+          badge.className = "cloud-status-badge cloud-online";
+          badge.innerText = "NUBE: SINCRONIZADA 🟢";
+        } else {
+          badge.className = "cloud-status-badge cloud-offline";
+          badge.innerText = "NUBE: DESCONECTADA ⚪";
+        }
+      }
+      if (msgStatus && mensaje) {
+        msgStatus.innerText = mensaje;
+      }
+    }
+
+    function inicializarFirebase() {
+      let config = FIREBASE_CONFIG_DEFAULT;
+      const configGuardada = localStorage.getItem("firebase_config_custom");
+      
+      if (configGuardada) {
+        try {
+          config = JSON.parse(configGuardada);
+        } catch (e) {
+          console.error("Configuración de Firebase en localStorage corrupta.");
+        }
+      }
+
+      if (!config || !config.apiKey || !config.projectId) {
+        actualizarEstadoNube(false, "SIN CONFIGURACIÓN. Pega tu firebaseConfig abajo.");
+        return;
+      }
+
+      try {
+        if (!firebase.apps.length) {
+          firebase.initializeApp(config);
+        }
+        db = firebase.firestore();
+
+        if (unsubscribeFirestore) unsubscribeFirestore();
+        
+        unsubscribeFirestore = db.collection("workstation").doc("datos_academicos").onSnapshot(doc => {
+          if (doc.exists) {
+            const data = doc.data();
+            if (data.tareas) {
+              tareas = data.tareas.map(t => ({
+                ...t,
+                tipo: t.tipo || 'porcentual',
+                materia: normalizarMateria(t.materia),
+                hora: (t.hora === "12:00:00" || !t.hora) ? "00:00:00" : (t.hora.length === 5 ? t.hora + ":00" : t.hora),
+                puntos: Number(t.puntos) || (t.tipo === 'ordinal' ? 0 : 20),
+                base: Number(t.base) || (t.tipo === 'ordinal' ? 0 : 100),
+                forzarDual: Boolean(t.forzarDual),
+                urlClassroom: t.urlClassroom || "",
+                detalles: t.detalles || "",
+                califX: t.califX !== undefined ? t.califX : (t.notaObtenida !== undefined ? t.notaObtenida : null)
+              }));
+            }
+            if (data.calificacionesSemestre) calificacionesSemestre = data.calificacionesSemestre;
+            if (data.pesosParciales) pesosParciales = data.pesosParciales;
+
+            guardarLocal(true);
+            render();
+            actualizarEstadoNube(true, "CONEXIÓN ACTIVA // SINCRONIZANDO EN TIEMPO REAL");
+          } else {
+            guardarLocal(false);
+            actualizarEstadoNube(true, "BASE DE DATOS INICIALIZADA EN FIRESTORE");
+          }
+        }, err => {
+          console.error("Fallo de conexión con Firestore:", err);
+          actualizarEstadoNube(false, "ERROR: Revisa las reglas de Firestore (Modo de prueba).");
+        });
+
+      } catch (err) {
+        console.error("Error al inicializar Firebase:", err);
+        actualizarEstadoNube(false, "ERROR AL INICIALIZAR SDK: " + err.message);
+      }
+    }
+
+    function guardarConfigFirebase() {
+      const txt = document.getElementById("input-firebase-config").value.trim();
+      if (!txt) return alert("Pega tu configuración de Firebase primero.");
+
+      try {
+        let limpio = txt;
+        if (limpio.includes("firebaseConfig =")) {
+          limpio = limpio.split("firebaseConfig =")[1].replace(";", "").trim();
+        }
+        if (!limpio.startsWith("{")) limpio = "{" + limpio + "}";
+        limpio = limpio.replace(/([{,]\s*)([a-zA-Z0-9_]+)\s*:/g, '$1"$2":');
+        
+        const configObj = JSON.parse(limpio);
+        if (!configObj.apiKey || !configObj.projectId) {
+          throw new Error("El objeto debe contener al menos 'apiKey' y 'projectId'.");
+        }
+
+        localStorage.setItem("firebase_config_custom", JSON.stringify(configObj));
+        alert("CONFIGURACIÓN DE FIREBASE REGISTRADA. INICIANDO CONEXIÓN...");
+        inicializarFirebase();
+      } catch (e) {
+        alert("Error de formato en el texto pegado: " + e.message + "\nAsegúrate de copiar el objeto completo { ... }.");
+      }
+    }
+
+    function desconectarFirebase() {
+      if (confirm("¿Desconectar sincronización en la nube? El sistema volverá a funcionar exclusivamente en modo local.")) {
+        if (unsubscribeFirestore) unsubscribeFirestore();
+        localStorage.removeItem("firebase_config_custom");
+        db = null;
+        actualizarEstadoNube(false, "Nube desconectada. Modo local activo.");
+        alert("NUBE DESCONECTADA.");
+      }
+    }
+
+    function setFiltro(tipo) {
+      filtroActual = tipo;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      const activeBtn = document.getElementById('flt-' + tipo);
+      if (activeBtn) activeBtn.classList.add('active');
+      render();
+    }
+
+    function alternarCamposPonderacion(tipo) {
+      const row = document.getElementById("row-ponderacion-inputs");
+      if (row) row.style.display = tipo === 'ordinal' ? 'none' : 'flex';
+    }
+
+    function alternarCamposEdicionPonderacion(tipo) {
+      const row = document.getElementById("row-edit-ponderacion");
+      if (row) row.style.display = tipo === 'ordinal' ? 'none' : 'flex';
+    }
+
+    function toggleDesgloseDetalles(id) {
+      const el = document.getElementById("drawer-detalles-" + id);
+      if (!el) return;
+      el.style.display = (el.style.display === "none" || !el.style.display) ? "block" : "none";
+    }
+
+    function toggleModoDual(id) {
+      tareas = tareas.map(t => t.id === id ? { ...t, forzarDual: !t.forzarDual } : t);
+      guardarLocal();
+      render();
+    }
+
+    function resetearSincronizacionCalendar() {
+      tareas = tareas.map(t => ({ ...t, sincronizada: false }));
+      guardarLocal();
+      render();
+      alert("TODAS LAS TAREAS SE HAN MARCADO COMO NO AGENDADAS.\nAhora puedes pulsar 'TODO A CALENDAR' para sincronizarlas con sus horas correspondientes.");
+    }
+
+    function abrirEditorManualDirecto(idPreseleccionado = null) {
+      const modal = document.getElementById("modal-editor-tarea");
+      const selectTarea = document.getElementById("edit-select-tarea");
+      const selectMat = document.getElementById("edit-materia");
+
+      selectMat.innerHTML = MATERIAS_OFICIALES.map(m => `<option value="${m}">${m.toUpperCase()}</option>`).join("");
+      selectTarea.innerHTML = tareas.map(t => `<option value="${t.id}">[${t.materia.toUpperCase()}] ${t.actividad}</option>`).join("");
+
+      if (idPreseleccionado) selectTarea.value = idPreseleccionado;
+
+      cargarDatosEnFormularioEdicion(selectTarea.value);
+      modal.style.display = "flex";
+    }
+
+    function cerrarEditorManual() {
+      document.getElementById("modal-editor-tarea").style.display = "none";
+    }
+
+    function cargarDatosEnFormularioEdicion(idStr) {
+      const id = Number(idStr);
+      const t = tareas.find(x => x.id === id);
+      if (!t) return;
+
+      document.getElementById("edit-materia").value = t.materia;
+      document.getElementById("edit-actividad").value = t.actividad;
+      document.getElementById("edit-url-classroom").value = t.urlClassroom || "";
+      document.getElementById("edit-tipo").value = t.tipo || 'porcentual';
+      document.getElementById("edit-fecha").value = t.fecha;
+      document.getElementById("edit-hora").value = (t.hora && t.hora.length >= 5) ? t.hora.substring(0, 5) : "00:00";
+      document.getElementById("edit-puntos").value = t.puntos;
+      document.getElementById("edit-base").value = t.base;
+      document.getElementById("edit-detalles").value = t.detalles || "";
+      alternarCamposEdicionPonderacion(t.tipo || 'porcentual');
+    }
+
+    function guardarEdicionManualTarea() {
+      const id = Number(document.getElementById("edit-select-tarea").value);
+      const t = tareas.find(x => x.id === id);
+      if (!t) return;
+
+      const tipo = document.getElementById("edit-tipo").value;
+      const nuevoPuntos = tipo === 'ordinal' ? 0 : (Number(document.getElementById("edit-puntos").value) || 20);
+      const nuevoBase = tipo === 'ordinal' ? 0 : (Number(document.getElementById("edit-base").value) || 100);
+
+      if (t.puntos !== nuevoPuntos) t.califX = null;
+
+      let horaEdit = document.getElementById("edit-hora").value.trim();
+      if (!horaEdit) horaEdit = "00:00:00";
+      else if (horaEdit.length === 5) horaEdit += ":00";
+
+      t.materia = normalizarMateria(document.getElementById("edit-materia").value);
+      t.actividad = document.getElementById("edit-actividad").value.trim() || t.actividad;
+      t.urlClassroom = document.getElementById("edit-url-classroom").value.trim();
+      t.tipo = tipo;
+      t.fecha = document.getElementById("edit-fecha").value || t.fecha;
+      t.hora = horaEdit;
+      t.puntos = nuevoPuntos;
+      t.base = nuevoBase;
+      t.detalles = document.getElementById("edit-detalles").value.trim();
+      t.sincronizada = false;
+
+      guardarLocal();
+      render();
+      cerrarEditorManual();
+    }
+
+    function formatearFechaLarga(fechaStr) {
+      if (!fechaStr) return "";
+      const partes = fechaStr.split("-");
+      if (partes.length !== 3) return fechaStr;
+      const fechaObj = new Date(parseInt(partes[0]), parseInt(partes[1]) - 1, parseInt(partes[2]));
+      return fechaObj.toLocaleDateString("es-MX", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+    }
+
+    function calcularCuentaRegresiva(fechaStr, horaStr = "00:00:00") {
+      const horaFinal = horaStr && horaStr.length >= 5 ? (horaStr.length === 5 ? horaStr + ":00" : horaStr) : "00:00:00";
+      const target = new Date(`${fechaStr}T${horaFinal}`);
+      const ahora = new Date();
+      const diff = target - ahora;
+
+      if (diff <= 0) return { texto: "PLAZO CUMPLIDO", urgente: false, zero: true };
+
+      const dias = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const horas = Math.floor((diff / (1000 * 60 * 60)) % 24);
+
+      return {
+        texto: `${dias} dias y ${horas} horas`,
+        urgente: dias < 1,
+        zero: false
+      };
+    }
+
+    setInterval(() => {
+      document.querySelectorAll(".countdown-timer").forEach(el => {
+        const fecha = el.getAttribute("data-fecha");
+        const hora = el.getAttribute("data-hora") || "00:00:00";
+        if (fecha) {
+          const res = calcularCuentaRegresiva(fecha, hora);
+          el.innerText = res.texto;
+          if (res.zero) {
+            el.className = "countdown-timer zero";
+          } else if (res.urgente) {
+            el.className = "countdown-timer urgente";
+          } else {
+            el.className = "countdown-timer";
+          }
+        }
+      });
+    }, 1000);
+
+    function actualizarBaseTarea(id, campo, valor) {
+      const valNum = parseFloat(valor);
+      if (isNaN(valNum) || valNum <= 0) return;
+      tareas = tareas.map(t => {
+        if (t.id === id) {
+          if (campo === 'puntos' && t.puntos !== valNum) return { ...t, puntos: valNum, califX: null };
+          if (campo === 'base' && t.base !== valNum) return { ...t, base: valNum };
+        }
+        return t;
+      });
+      guardarLocal();
+      render();
+    }
+
+    function actualizarCalifTarea(id, valor) {
+      const valNum = parseFloat(valor);
+      tareas = tareas.map(t => t.id === id ? { ...t, califX: isNaN(valNum) ? null : Math.max(0, valNum) } : t);
+      guardarLocal();
+      render();
+    }
+
+    function calcularP3Materia(materia) {
+      const matNorm = normalizarMateria(materia);
+      const tareasMat = tareas.filter(t => normalizarMateria(t.materia).toLowerCase() === matNorm.toLowerCase() && (t.parcial === 3 || !t.parcial));
+      let puntosGanadosBase100 = 0;
+      let puntosProgramadosBase100 = 0;
+
+      tareasMat.forEach(t => {
+        if (t.tipo !== 'ordinal') {
+          const base = t.base || 100;
+          const pesoBase100 = (t.puntos / base) * 100;
+          puntosProgramadosBase100 += pesoBase100;
+
+          if (t.califX !== null && t.califX !== undefined) {
+            const ptsGanados = (t.califX / base) * 100;
+            puntosGanadosBase100 += ptsGanados;
+          }
+        }
+      });
+
+      const extra = (calificacionesSemestre[matNorm] && calificacionesSemestre[matNorm].extraP3) || 0;
+      const totalAcumulado = puntosGanadosBase100 + extra;
+      const califBase100 = Math.min(100.0, totalAcumulado);
+      const colchon = Math.max(0, totalAcumulado - 100.0);
+
+      return {
+        puntosAcumulados: Number(califBase100.toFixed(2)),
+        colchon: Number(colchon.toFixed(2)),
+        puntosProgramados: Number(puntosProgramadosBase100.toFixed(2))
+      };
+    }
+
+    function actualizarNotaParcial(mat, parcialKey, valor) {
+      const matNorm = normalizarMateria(mat);
+      if (!calificacionesSemestre[matNorm]) {
+        calificacionesSemestre[matNorm] = { p1: null, p2: null, extraP3: 0 };
+      }
+      let valNum = parseFloat(valor);
+      if (isNaN(valNum)) {
+        calificacionesSemestre[matNorm][parcialKey] = null;
+      } else {
+        if (valNum <= 10 && valNum > 0) valNum = valNum * 10;
+        calificacionesSemestre[matNorm][parcialKey] = Math.max(valNum, 0);
+      }
+      guardarLocal();
+      render();
+    }
+
+    function actualizarPesoMateria(mat, parcialKey, valor) {
+      const matNorm = normalizarMateria(mat);
+      const valNum = parseFloat(valor);
+      if (isNaN(valNum) || valNum <= 0) return;
+      if (!pesosParciales[matNorm]) pesosParciales[matNorm] = { p1: 33.33, p2: 33.33, p3: 33.33 };
+      
+      if (Math.abs(valNum - 100 / 3) < 0.15 || valNum === 33.3 || valNum === 33.33 || valNum === 33.34) {
+        pesosParciales[matNorm][parcialKey] = 33.33;
+      } else {
+        pesosParciales[matNorm][parcialKey] = Number(valNum.toFixed(2));
+      }
+
+      guardarLocal();
+      render();
+    }
+
+    function ejecutarReinicioSemestre() {
+      if (confirm("ADVERTENCIA DE SEGURIDAD // BATIZ CONTROL:\n¿Confirmar reinicio de semestre? Todas las tareas y notas de los 3 parciales serán eliminadas.")) {
+        tareas = [];
+        for (let k in calificacionesSemestre) {
+          calificacionesSemestre[k] = { p1: null, p2: null, extraP3: 0 };
+        }
+        guardarLocal();
+        render();
+        alert("SISTEMA RESTABLECIDO. BASE DE DATOS EN CEROS.");
+        cambiarVista('evaluacion');
+      }
+    }
+
+    function guardarClientId() {
+      const val = document.getElementById("input-client-id").value.trim();
+      if (!val) return alert("CLIENT ID INVÁLIDO.");
+      localStorage.setItem("gcal_client_id", val);
+      alert("CLIENT ID REGISTRADO. PROCEDE CON AUTH GOOGLE.");
+      configurarClienteOAuth();
+    }
+
+    function configurarClienteOAuth() {
+      const clientId = localStorage.getItem("gcal_client_id");
+      if (!clientId) return;
+
+      if (typeof google === "undefined" || !google.accounts || !google.accounts.oauth2) {
+        setTimeout(configurarClienteOAuth, 500);
+        return;
+      }
+
+      tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: "https://www.googleapis.com/auth/calendar.events",
+        callback: (resp) => {
+          if (resp && resp.access_token) {
+            accessToken = resp.access_token;
+            localStorage.setItem("gcal_access_token", accessToken);
+            document.getElementById("auth-status").innerText = "ESTADO: AUTENTICACIÓN ACTIVA CON CALENDAR";
+            alert("CONEXIÓN DIRECTA ESTABLECIDA CON GOOGLE CALENDAR.");
+          } else if (resp && resp.error) {
+            document.getElementById("auth-status").innerText = "ERROR: " + resp.error;
+          }
+        },
+      });
+    }
+
+    function iniciarSesionGoogle() {
+      const clientId = localStorage.getItem("gcal_client_id");
+      if (!clientId) {
+        alert("CONFIGURA Y GUARDA TU CLIENT ID PRIMERO.");
+        return;
+      }
+      if (!tokenClient) configurarClienteOAuth();
+
+      if (tokenClient) {
+        tokenClient.requestAccessToken({ prompt: 'consent' });
+      } else {
+        alert("INICIALIZANDO LIBRERÍAS... REINTENTA EN 2 SEGUNDOS.");
+      }
+    }
+
+    window.addEventListener("load", () => {
+      const selectMat = document.getElementById("input-materia");
+      if (selectMat) {
+        selectMat.innerHTML = MATERIAS_OFICIALES.map(m => `<option value="${m}">${m.toUpperCase()}</option>`).join("");
+      }
+
+      const savedClientId = localStorage.getItem("gcal_client_id");
+      if (savedClientId) {
+        const input = document.getElementById("input-client-id");
+        if (input) input.value = savedClientId;
+        configurarClienteOAuth();
+      }
+      if (accessToken) {
+        document.getElementById("auth-status").innerText = "ESTADO: SESIÓN ACTIVA CON GOOGLE CALENDAR";
+      }
+
+      const savedFb = localStorage.getItem("firebase_config_custom");
+      if (savedFb) {
+        const fbArea = document.getElementById("input-firebase-config");
+        if (fbArea) fbArea.value = savedFb;
+      }
+
+      inicializarFirebase();
+    });
+
+    async function insertarEventoGoogle(t) {
+      if (!accessToken) {
+        iniciarSesionGoogle();
+        return false;
+      }
+
+      const horaEvento = (t.hora && t.hora.length >= 5) ? (t.hora.length === 5 ? t.hora + ":00" : t.hora) : "00:00:00";
+      const inicioStr = `${t.fecha}T${horaEvento}`;
+      const fechaInicio = new Date(inicioStr);
+      const fechaFin = new Date(fechaInicio.getTime() + 30 * 60000);
+
+      const evento = {
+        summary: `[${t.materia}] ${t.actividad}`,
+        description: t.tipo === 'ordinal' ? `Actividad ordinal formativa.\nHora: ${horaEvento}\nClassroom: ${t.urlClassroom || 'N/A'}\nDetalles: ${t.detalles || 'Sin notas'}` : `Entrega académica C.A.B. (CECyT 9 Bátiz - 1IM9).\nPonderación: ${t.puntos}/${t.base || 100} pts.\nHora: ${horaEvento}\nClassroom: ${t.urlClassroom || 'N/A'}\nDetalles: ${t.detalles || 'Sin notas'}`,
+        start: { dateTime: fechaInicio.toISOString() },
+        end: { dateTime: fechaFin.toISOString() },
+        reminders: {
+          useDefault: false,
+          overrides: [
+            { method: 'popup', minutes: 10080 },
+            { method: 'popup', minutes: 4320 },
+            { method: 'popup', minutes: 1440 }
+          ]
+        }
+      };
+
+      try {
+        const res = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(evento)
+        });
+
+        if (res.ok) {
+          t.sincronizada = true;
+          guardarLocal();
+          render();
+          return true;
+        } else if (res.status === 401) {
+          accessToken = null;
+          localStorage.removeItem("gcal_access_token");
+          alert("SESIÓN EXPIRADA. AUTORIZA NUEVAMENTE CON AUTH GOOGLE.");
+          iniciarSesionGoogle();
+          return false;
+        }
+      } catch (err) {
+        console.error("Fallo de red al insertar evento:", err);
+      }
+      return false;
+    }
+
+    async function agendarTareaDirecta(id) {
+      const t = tareas.find(x => x.id === id);
+      if (!t) return;
+      const exito = await insertarEventoGoogle(t);
+      if (exito) {
+        alert(`EVENTO AGENDADO: "${t.actividad}" A LAS ${t.hora || '00:00:00'} HRS CON ALERTAS A 7D, 3D Y 24H.`);
+      }
+    }
+
+    async function sincronizarTodasLasTareas() {
+      const pendientes = tareas.filter(t => !t.sincronizada);
+      if (!pendientes.length) return alert("TODAS LAS ENTREGAS YA ESTÁN SINCRONIZADAS.");
+      if (!accessToken) {
+        alert("INICIA SESIÓN CON GOOGLE EN CONFIGURACIÓN.");
+        cambiarVista("config");
+        return;
+      }
+
+      let subidas = 0;
+      for (const t of pendientes) {
+        const ok = await insertarEventoGoogle(t);
+        if (ok) subidas++;
+      }
+      alert(`SINCRONIZACIÓN FINALIZADA: ${subidas} NUEVAS ENTREGAS AGENDADAS.`);
+    }
+
+    function exportarTareas() {
+      const respaldoCompleto = { tareas, calificacionesSemestre, pesosParciales };
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(respaldoCompleto, null, 2));
+      const a = document.createElement("a");
+      a.setAttribute("href", dataStr);
+      a.setAttribute("download", "cab_respaldo_academico_1im9.json");
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    function importarTareas(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const importadas = JSON.parse(evt.target.result);
+          if (importadas.tareas && importadas.calificacionesSemestre) {
+            tareas = importadas.tareas.map(t => ({ ...t, tipo: t.tipo || 'porcentual', materia: normalizarMateria(t.materia), hora: (t.hora === "12:00:00" || !t.hora) ? "00:00:00" : (t.hora.length === 5 ? t.hora + ":00" : t.hora), forzarDual: Boolean(t.forzarDual), urlClassroom: t.urlClassroom || "", detalles: t.detalles || "" }));
+            calificacionesSemestre = importadas.calificacionesSemestre;
+            if (importadas.pesosParciales) pesosParciales = importadas.pesosParciales;
+          } else if (Array.isArray(importadas)) {
+            tareas = importadas.map(t => ({ ...t, tipo: t.tipo || 'porcentual', materia: normalizarMateria(t.materia), hora: (t.hora === "12:00:00" || !t.hora) ? "00:00:00" : (t.hora.length === 5 ? t.hora + ":00" : t.hora), forzarDual: Boolean(t.forzarDual), urlClassroom: t.urlClassroom || "", detalles: t.detalles || "" }));
+          }
+          guardarLocal();
+          render();
+          alert("BASE DE DATOS RESTAURADA CON ÉXITO.");
+          cambiarVista("evaluacion");
+        } catch (err) {
+          alert("ARCHIVO CORRUPTO O INCOMPATIBLE.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function cambiarVista(vista) {
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      const botones = document.querySelectorAll(".nav-tabs button");
+      botones.forEach(b => b.classList.remove("active"));
+
+      const panel = document.getElementById("vista-" + vista);
+      if (panel) panel.classList.add("active");
+
+      const nombres = ['cronograma', 'materias', 'evaluacion', 'datos', 'config'];
+      const idx = nombres.indexOf(vista);
+      if (idx !== -1 && botones[idx]) botones[idx].classList.add("active");
+
+      render();
+    }
+
+    function alternarTarea(id) {
+      tareas = tareas.map(t => t.id === id ? { ...t, completada: !t.completada } : t);
+      guardarLocal();
+      render();
+    }
+
+    function eliminarTarea(id, elementoBoton) {
+      const card = elementoBoton.closest(".card");
+      if (card) {
+        card.classList.add("borrando");
+        setTimeout(() => {
+          tareas = tareas.filter(t => t.id !== id);
+          guardarLocal();
+          render();
+        }, 180);
+      } else {
+        tareas = tareas.filter(t => t.id !== id);
+        guardarLocal();
+        render();
+      }
+    }
+
+    function agregarTareaManual(e) {
+      e.preventDefault();
+      const tipo = document.getElementById("input-tipo").value;
+      const puntos = tipo === 'ordinal' ? 0 : (Number(document.getElementById("input-puntos").value) || 20);
+      const base = tipo === 'ordinal' ? 0 : (Number(document.getElementById("input-base").value) || 100);
+      const detalles = document.getElementById("input-detalles").value.trim();
+      const urlClassroom = document.getElementById("input-url-classroom").value.trim();
+
+      let horaInput = document.getElementById("input-hora").value.trim();
+      if (!horaInput) horaInput = "00:00:00";
+      else if (horaInput.length === 5) horaInput += ":00";
+
+      const nueva = {
+        id: Date.now(),
+        tipo: tipo,
+        materia: normalizarMateria(document.getElementById("input-materia").value.trim()),
+        actividad: document.getElementById("input-actividad").value.trim(),
+        urlClassroom: urlClassroom,
+        fecha: document.getElementById("input-fecha").value,
+        hora: horaInput,
+        puntos: puntos,
+        base: base,
+        forzarDual: false,
+        detalles: detalles,
+        califX: null,
+        completada: false,
+        sincronizada: false,
+        parcial: 3
+      };
+      tareas.push(nueva);
+      guardarLocal();
+      e.target.reset();
+      document.getElementById("input-hora").value = "00:00";
+      alternarCamposPonderacion('porcentual');
+      cambiarVista("cronograma");
+    }
+
+    function extraerFecha(t) {
+      const meses = {
+        "enero": "01", "febrero": "02", "marzo": "03", "abril": "04",
+        "mayo": "05", "junio": "06", "julio": "07", "agosto": "08",
+        "septiembre": "09", "octubre": "10", "noviembre": "11", "diciembre": "12"
+      };
+      const fechaMatch = t.match(/(\d{1,2})\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)/);
+      if (fechaMatch) {
+        let dia = fechaMatch[1].padStart(2, '0');
+        let mes = meses[fechaMatch[2]];
+        return `2026-${mes}-${dia}`;
+      }
+      const isoMatch = t.match(/\b(202\d-\d{2}-\d{2})\b/);
+      if (isoMatch) return isoMatch[1];
+      return null;
+    }
+
+    function extraerHora(texto) {
+      if (!texto) return "00:00:00";
+      const t = texto.toLowerCase();
+
+      const matchALas = t.match(/a las\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm|hrs)?/i);
+      if (matchALas) {
+        let h = parseInt(matchALas[1], 10);
+        let m = matchALas[2] ? parseInt(matchALas[2], 10) : 0;
+        const ap = matchALas[3] ? matchALas[3].toLowerCase() : null;
+        if (ap === "pm" && h < 12) h += 12;
+        if (ap === "am" && h === 12) h = 0;
+        if (h >= 0 && h < 24 && m >= 0 && m < 60) {
+          return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`;
+        }
+      }
+
+      const matchColon = t.match(/\b(\d{1,2}):(\d{2})\s*(am|pm|hrs)?\b/i);
+      if (matchColon) {
+        let h = parseInt(matchColon[1], 10);
+        let m = parseInt(matchColon[2], 10);
+        const ap = matchColon[3] ? matchColon[3].toLowerCase() : null;
+        if (ap === "pm" && h < 12) h += 12;
+        if (ap === "am" && h === 12) h = 0;
+        if (h >= 0 && h < 24 && m >= 0 && m < 60) {
+          return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`;
+        }
+      }
+
+      return "00:00:00";
+    }
+
+    function agregarMensajeChat(remitente, texto) {
+      const history = document.getElementById("chat-history");
+      const div = document.createElement("div");
+      div.className = `chat-msg ${remitente}`;
+      div.innerHTML = texto;
+      history.appendChild(div);
+      history.scrollTop = history.scrollHeight;
+    }
+
+    function verificarEnter(e) {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        enviarMensajeChat();
+      }
+    }
+
+    async function enviarMensajeChat() {
+      const input = document.getElementById("chat-input");
+      const texto = input.value.trim();
+      if (!texto) return;
+
+      agregarMensajeChat("user", texto);
+      input.value = "";
+      const lower = texto.toLowerCase();
+
+      if (esperandoConfirmacionReset) {
+        if (lower.includes("confirmar") || lower.includes("si") || lower.includes("adelante")) {
+          tareas = [];
+          for (let k in calificacionesSemestre) {
+            calificacionesSemestre[k] = { p1: null, p2: null, extraP3: 0 };
+          }
+          guardarLocal();
+          render();
+          esperandoConfirmacionReset = false;
+          agregarMensajeChat("bot", "REINICIO TOTAL DE SEMESTRE EJECUTADO. Registros listos para el siguiente término.");
+          return;
+        } else {
+          esperandoConfirmacionReset = false;
+          agregarMensajeChat("bot", "Reinicio cancelado.");
+          return;
+        }
+      }
+
+      if (lower.includes("reinicio de semestre") || lower.includes("reiniciar semestre") || lower.includes("nuevo semestre")) {
+        esperandoConfirmacionReset = true;
+        agregarMensajeChat("bot", "ADVERTENCIA: ¿Confirmar purga completa del semestre? Escribe <strong>CONFIRMAR</strong> para reiniciar todas las materias a ceros.");
+        return;
+      }
+
+      if (lower.includes("desincronizar") || lower.includes("no agendadas") || lower.includes("reset calendar") || lower.includes("reiniciar calendar")) {
+        resetearSincronizacionCalendar();
+        agregarMensajeChat("bot", "ESTADO REINICIADO: Todas las tareas se marcaron como pendientes. Puedes volver a pulsar <strong>TODO A CALENDAR</strong>.");
+        return;
+      }
+
+      if (lower.includes("agendalas") || lower.includes("sincronizar") || lower.includes("sincroniza")) {
+        agregarMensajeChat("bot", "SINCRONIZANDO ACTIVIDADES ACTIVAS A GOOGLE CALENDAR...");
+        await sincronizarTodasLasTareas();
+        agregarMensajeChat("bot", "SINCRONIZACIÓN CONCLUIDA.");
+        return;
+      }
+
+      if (lower.includes("extra") || lower.includes("bono") || lower.includes("colchon")) {
+        const materia = normalizarMateria(lower);
+        const puntosMatch = lower.match(/(\d+(?:\.\d+)?)\s*(?:punto|pts|puntos)/);
+        if (materia && puntosMatch) {
+          const extraPts = parseFloat(puntosMatch[1]);
+          if (!calificacionesSemestre[materia]) calificacionesSemestre[materia] = { p1: null, p2: null, extraP3: 0 };
+          calificacionesSemestre[materia].extraP3 = (calificacionesSemestre[materia].extraP3 || 0) + extraPts;
+          guardarLocal();
+          render();
+          const p3Info = calcularP3Materia(materia);
+          agregarMensajeChat("bot", `BONO ASIGNADO: +${formatearPorcentaje(extraPts)} en <span style="color:${getColorMateria(materia)}; font-weight:700;">${materia.toUpperCase()}</span>. Total en P3: <strong>${formatearPorcentaje(p3Info.puntosAcumulados)}</strong>${p3Info.colchon > 0 ? ' (Colchón: +' + formatearPorcentaje(p3Info.colchon) + ')' : ''}.`);
+          return;
+        }
+      }
+
+      if (lower.includes("detalles") || lower.includes("nota") || lower.includes("notas")) {
+        let tarea = null;
+        let mejorScore = 0;
+        for (const t of tareas) {
+          let score = 0;
+          if (lower.includes(t.materia.toLowerCase())) score += 2;
+          const palabras = t.actividad.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+          for (const w of palabras) {
+            if (lower.includes(w)) score += 3;
+          }
+          if (score > mejorScore) {
+            mejorScore = score;
+            tarea = t;
+          }
+        }
+
+        if (tarea) {
+          const partes = texto.split(/detalles?:|notas?:/i);
+          if (partes.length > 1) {
+            tarea.detalles = partes[1].trim();
+            guardarLocal();
+            render();
+            agregarMensajeChat("bot", `DETALLES ACTUALIZADOS: <span style="color:${getColorMateria(tarea.materia)}; font-weight:700;">${tarea.materia.toUpperCase()}</span>: "${tarea.actividad}"<br>• <em>${tarea.detalles}</em>`);
+            return;
+          }
+        }
+      }
+
+      const p1p2Match = lower.match(/(?:en\s+)?p([12])\s+(?:de\s+)?([a-záéíóúñ\s]+).*?(\d+(?:\.\d+)?)/i) ||
+                        lower.match(/([a-záéíóúñ\s]+)\s+p([12]).*?(\d+(?:\.\d+)?)/i) ||
+                        lower.match(/p([12])\s*=?\s*(\d+(?:\.\d+)?)/i);
+
+      if (p1p2Match && (lower.includes("p1") || lower.includes("p2") || lower.includes("primer parcial") || lower.includes("segundo parcial"))) {
+        const numParcial = (lower.includes("primer") || lower.includes("1er") || lower.includes("p1")) ? "p1" : "p2";
+        const materia = normalizarMateria(lower);
+        const numeros = lower.match(/(\d+(?:\.\d+)?)/g);
+        let nota = null;
+
+        if (numeros) {
+          for (let n of numeros) {
+            let val = parseFloat(n);
+            if (val > 2 && !lower.includes("p" + n)) {
+              nota = val;
+            }
+          }
+          if (nota === null) nota = parseFloat(numeros[numeros.length - 1]);
+        }
+
+        if (materia && nota !== null) {
+          if (nota <= 10 && nota > 0) nota = nota * 10;
+          if (!calificacionesSemestre[materia]) calificacionesSemestre[materia] = { p1: null, p2: null, extraP3: 0 };
+          calificacionesSemestre[materia][numParcial] = Math.max(nota, 0);
+          guardarLocal();
+          render();
+          agregarMensajeChat("bot", `REGISTRO: <span style="color:${getColorMateria(materia)}; font-weight:700;">${materia.toUpperCase()}</span> ${numParcial.toUpperCase()} = <strong>${nota.toFixed(0)}</strong>. Matriz semestral actualizada.`);
+          return;
+        }
+      }
+
+      if (lower.includes("saqué") || lower.includes("saque") || lower.includes("obtuve") || lower.includes("califica")) {
+        let tarea = null;
+        let mejorScore = 0;
+        for (const t of tareas) {
+          if (t.tipo === 'ordinal') continue;
+          let score = 0;
+          if (lower.includes(t.materia.toLowerCase())) score += 2;
+          const palabras = t.actividad.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+          for (const w of palabras) {
+            if (lower.includes(w)) score += 3;
+          }
+          if (score > mejorScore) {
+            mejorScore = score;
+            tarea = t;
+          }
+        }
+
+        if (tarea) {
+          const fracMatch = lower.match(/(\d+(?:\.\d+)?)\s*(?:\/|de)\s*(\d+(?:\.\d+)?)/);
+          let notaObt = tarea.puntos;
+          if (fracMatch) {
+            notaObt = parseFloat(fracMatch[1]);
+          } else {
+            const singleMatch = lower.match(/(\d+(?:\.\d+)?)/);
+            if (singleMatch) notaObt = parseFloat(singleMatch[1]);
+          }
+
+          tarea.califX = notaObt;
+          guardarLocal();
+          render();
+
+          const ptsGanados100 = ((notaObt / tarea.base) * 100);
+          const p3Info = calcularP3Materia(tarea.materia);
+
+          agregarMensajeChat("bot", `CALIFICACIÓN: "${tarea.actividad}" asignada con ${notaObt} / ${tarea.puntos} en BASE DEL PROFESOR (+${formatearPorcentaje(ptsGanados100)} en PORCENTAJE). Total en <span style="color:${getColorMateria(tarea.materia)}; font-weight:700;">${tarea.materia.toUpperCase()}</span>: <strong>${formatearPorcentaje(p3Info.puntosAcumulados)}</strong>.`);
+          return;
+        }
+      }
+
+      const esOrdinal = lower.includes("ordinal") || lower.includes("ordinales") || lower.includes("sin valor") || lower.includes("sin porcentaje") || lower.includes("sin ponderacion") || lower.includes("sin ponderación");
+      const tipo = esOrdinal ? 'ordinal' : 'porcentual';
+      const materia = normalizarMateria(lower);
+      const fecha = extraerFecha(lower);
+      const hora = extraerHora(lower);
+      
+      const urlMatch = texto.match(/https?:\/\/[^\s]+/i);
+      const urlClassroom = urlMatch ? urlMatch[0] : "";
+
+      let puntos = 20;
+      let base = 100;
+
+      if (!esOrdinal) {
+        const escalaMatch = lower.match(/vale\s*(\d+(?:\.\d+)?)\s*(?:\/|sobre|de)\s*(\d+(?:\.\d+)?)/);
+        if (escalaMatch) {
+          puntos = parseFloat(escalaMatch[1]);
+          base = parseFloat(escalaMatch[2]);
+        } else {
+          const ptsMatch = lower.match(/(\d+)\s*(?:puntos|pts|ponderaci[oó]n)/);
+          if (ptsMatch) puntos = parseFloat(ptsMatch[1]);
+        }
+      } else {
+        puntos = 0;
+        base = 0;
+      }
+
+      let actividad = texto
+        .replace(/https?:\/\/[^\s]+/gi, "")
+        .replace(/para el.*?entregar/i, "")
+        .replace(/entregar/i, "")
+        .replace(/vale \d+.*$/i, "")
+        .replace(/a las\s+\d{1,2}(?::\d{2})?\s*(?:am|pm|hrs)?/i, "")
+        .replace(/\b\d{1,2}:\d{2}\s*(?:am|pm|hrs)?\b/i, "")
+        .replace(/tarea ordinal/i, "")
+        .replace(/ordinal/i, "")
+        .replace(/sin valor/i, "")
+        .replace(/sin porcentaje/i, "")
+        .replace(/en álgebra|en filosofía|en computación|en inglés|en dhp|en historia|en desarrollo personal|en orientación/i, "")
+        .trim();
+
+      if (!actividad || actividad.length < 3) actividad = "ENTREGA PROGRAMADA";
+      actividad = actividad.charAt(0).toUpperCase() + actividad.slice(1);
+
+      if (!fecha) {
+        tareaEnEspera = {
+          id: Date.now(),
+          tipo: tipo,
+          materia,
+          actividad,
+          urlClassroom: urlClassroom,
+          fecha: "",
+          hora: hora,
+          puntos,
+          base,
+          forzarDual: false,
+          detalles: "",
+          califX: null,
+          completada: false,
+          sincronizada: false,
+          parcial: 3
+        };
+        setTimeout(() => {
+          agregarMensajeChat("bot", `DETECTADO [${tipo.toUpperCase()}]: <span style="color:${getColorMateria(tareaEnEspera.materia)}; font-weight:700;">${tareaEnEspera.materia.toUpperCase()}</span>: "${tareaEnEspera.actividad}". INDICA LA FECHA DE ENTREGA.`);
+        }, 120);
+        return;
+      }
+
+      const nueva = {
+        id: Date.now(),
+        tipo: tipo,
+        materia,
+        actividad,
+        urlClassroom: urlClassroom,
+        fecha,
+        hora: hora,
+        puntos,
+        base,
+        forzarDual: false,
+        detalles: "",
+        califX: null,
+        completada: false,
+        sincronizada: false,
+        parcial: 3
+      };
+
+      tareas.push(nueva);
+      guardarLocal();
+
+      if (esOrdinal) {
+        setTimeout(() => {
+          agregarMensajeChat("bot", `ENTREGA ORDINAL REGISTRADA: <span style="color:${getColorMateria(nueva.materia)}; font-weight:700;">${nueva.materia.toUpperCase()}</span>: "${nueva.actividad}" // ${formatearFechaLarga(nueva.fecha)} - ${nueva.hora} HRS ${urlClassroom ? '[LINK GUARDADO]' : ''}.`);
+          render();
+        }, 120);
+      } else {
+        const pesoBase100 = ((nueva.puntos / nueva.base) * 100);
+        setTimeout(() => {
+          agregarMensajeChat("bot", `ENTREGA PORCENTUAL REGISTRADA: <span style="color:${getColorMateria(nueva.materia)}; font-weight:700;">${nueva.materia.toUpperCase()}</span>: "${nueva.actividad}" // ${formatearFechaLarga(nueva.fecha)} - ${nueva.hora} HRS [BASE DEL PROFESOR: ${nueva.puntos}/${nueva.base} PTS // PORCENTAJE: ${formatearPorcentaje(pesoBase100)}] ${urlClassroom ? '[LINK GUARDADO]' : ''}.`);
+          render();
+        }, 120);
+      }
+    }
+
+    function generarBloqueBarrasActividad(t, esVistaMaterias = false) {
+      if (t.tipo === 'ordinal') {
+        return `
+          <div class="ordinal-card-box">
+            <span style="font-size:0.8rem; color:#cbd5e1; font-weight:700;">ACTIVIDAD FORMATIVA:</span>
+            <span class="badge-ordinal">ORDINALES</span>
+          </div>
+        `;
+      }
+
+      const puntosX = Number(t.puntos) || 20;
+      const baseX = Number(t.base) || 100;
+      const porcBaseX = Math.min((puntosX / baseX) * 100, 100);
+      const valorEn100 = ((puntosX / baseX) * 100);
+
+      const esBase100 = (baseX === 100);
+      const modoUnaBarra = esBase100 && !t.forzarDual;
+
+      if (modoUnaBarra) {
+        return `
+          <div class="dual-bars-wrapper">
+            <div class="bar-row-block">
+              <div class="bar-label-sub">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span>PORCENTAJE</span>
+                  <button class="btn-mode-toggle" onclick="toggleModoDual(${t.id})" title="Hacer clic para editar puntos o base del profesor">⚙ AJUSTAR BASE</button>
+                </div>
+                <span class="pct-destacado">${formatearPorcentaje(valorEn100)}</span>
+              </div>
+              <div class="bar-container">
+                <div class="bar-fill" style="width: ${Math.min(valorEn100, 100)}%;"></div>
+              </div>
+            </div>
+          </div>
+        `;
+      } else {
+        return `
+          <div class="dual-bars-wrapper">
+            <div class="bar-row-block">
+              <div class="bar-label-sub">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span>BASE DEL PROFESOR</span>
+                  ${esBase100 ? `<button class="btn-mode-toggle" onclick="toggleModoDual(${t.id})" title="Unificar en una sola barra de porcentaje">⇤ UNIFICAR (%)</button>` : ''}
+                </div>
+                ${!esVistaMaterias ? `
+                  <div style="display:flex; align-items:center; gap:6px;">
+                    <input type="number" class="input-mini" value="${puntosX}" min="1" max="100" onchange="actualizarBaseTarea(${t.id}, 'puntos', this.value)">
+                    <span>/</span>
+                    <input type="number" class="input-mini" value="${baseX}" min="1" max="100" onchange="actualizarBaseTarea(${t.id}, 'base', this.value)">
+                    <span>PTS</span>
+                  </div>
+                ` : `
+                  <span>${puntosX} / ${baseX} PTS</span>
+                `}
+              </div>
+              <div class="bar-container">
+                <div class="bar-fill bar-gold" style="width: ${porcBaseX}%;"></div>
+              </div>
+            </div>
+
+            <div class="bar-row-block">
+              <div class="bar-label-sub">
+                <span>PORCENTAJE</span>
+                <span class="pct-destacado">${formatearPorcentaje(valorEn100)}</span>
+              </div>
+              <div class="bar-container">
+                <div class="bar-fill" style="width: ${Math.min(valorEn100, 100)}%;"></div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    function render() {
+      const cronogramaEl = document.getElementById("lista-cronograma");
+      let ordenadas = [...tareas].sort((a, b) => new Date(`${a.fecha}T${a.hora || '00:00:00'}`) - new Date(`${b.fecha}T${b.hora || '00:00:00'}`));
+      
+      if (filtroActual === 'activas') {
+        ordenadas = ordenadas.filter(t => !t.completada);
+      } else if (filtroActual === 'completadas') {
+        ordenadas = ordenadas.filter(t => t.completada);
+      }
+
+      cronogramaEl.innerHTML = ordenadas.length ? ordenadas.map(t => {
+        const doom = calcularCuentaRegresiva(t.fecha, t.hora);
+        const doomClase = doom.zero ? 'countdown-timer zero' : (doom.urgente ? 'countdown-timer urgente' : 'countdown-timer');
+        const syncClase = t.sincronizada ? 'sync-ok' : 'sync-pending';
+        const colorMat = getColorMateria(t.materia);
+        
+        const bloqueVisual = generarBloqueBarrasActividad(t, false);
+
+        return `
+          <div class="card ${syncClase} ${t.completada ? 'completada' : ''}">
+            <div class="card-top">
+              <span class="materia-tag" style="color:${colorMat}; text-shadow:0 0 8px ${colorMat}66;">${normalizarMateria(t.materia).toUpperCase()}:</span>
+              <span class="actividad-texto">${t.actividad}</span>
+            </div>
+
+            <div class="card-timing">
+              <span class="fecha-destacada">${formatearFechaLarga(t.fecha)}</span>
+              <span class="${doomClase}" data-fecha="${t.fecha}" data-hora="${t.hora || '00:00:00'}">${doom.texto}</span>
+            </div>
+
+            ${bloqueVisual}
+
+            <div class="card-bottom">
+              <div class="card-meta">
+                <span>HORA: ${t.hora || '00:00:00'} HRS</span>
+                ${t.sincronizada ? '<span class="badge badge-sync-ok">AGENDADO</span>' : '<span class="badge badge-sync-pending">PENDIENTE POR AGENDAR</span>'}
+                ${t.completada ? '<span class="badge" style="border: 1px solid #334155; color:#64748b; background:transparent;">ARCHIVADO</span>' : ''}
+              </div>
+              <div class="card-actions">
+                ${t.urlClassroom ? `<button class="btn-32" style="border-color:var(--accent); color:var(--accent);" onclick="abrirClassroom('${t.urlClassroom}')">CLASSROOM ↗</button>` : ''}
+                <button class="btn-32" onclick="toggleDesgloseDetalles(${t.id})">DETALLES ▾</button>
+                <button class="btn-32" onclick="agendarTareaDirecta(${t.id})">CALENDAR</button>
+                <input type="checkbox" class="toggle-crt" ${t.completada ? 'checked' : ''} onclick="alternarTarea(${t.id})" title="Marcar completada / pendiente">
+                <button class="btn-32 btn-32-danger" onclick="eliminarTarea(${t.id}, this)">X</button>
+              </div>
+            </div>
+
+            <div id="drawer-detalles-${t.id}" class="card-details-drawer" style="display:none;">
+              <div class="details-top-bar">
+                <span class="details-title-tag">DETALLES & NOTAS DE LA ACTIVIDAD:</span>
+                <button class="btn-32 btn-32-primary" style="font-size:0.75rem; padding:4px 10px;" onclick="abrirEditorManualDirecto(${t.id})">EDITAR</button>
+              </div>
+              <div class="details-text-content">${t.detalles ? t.detalles : '<em>Sin notas registradas. Haz clic en EDITAR para agregar especificaciones o rúbricas.</em>'}</div>
+              ${t.urlClassroom ? `<div style="margin-top:8px;"><a href="${t.urlClassroom}" target="_blank" style="color:var(--accent); font-size:0.8rem; text-decoration:none;">🔗 ENLACE DIRECTO A CLASSROOM</a></div>` : ''}
+            </div>
+          </div>
+        `;
+      }).join("") : "<p style='color:#ffffff; text-align:center; padding:24px;'>NO HAY ENTREGAS QUE COINCIDAN CON EL FILTRO</p>";
+
+      const materiasEl = document.getElementById("lista-materias");
+      const materiasConTareas = MATERIAS_OFICIALES.filter(mat =>
+        tareas.some(t => normalizarMateria(t.materia).toLowerCase() === mat.toLowerCase())
+      );
+
+      materiasEl.innerHTML = materiasConTareas.length ? materiasConTareas.map(mat => {
+        const tareasMat = tareas.filter(t => normalizarMateria(t.materia).toLowerCase() === mat.toLowerCase()).sort((a, b) => new Date(`${a.fecha}T${a.hora || '00:00:00'}`) - new Date(`${b.fecha}T${b.hora || '00:00:00'}`));
+        const colorMat = getColorMateria(mat);
+        
+        const puntosTotales100 = tareasMat.reduce((acc, curr) => {
+          if (curr.tipo === 'ordinal') return acc;
+          const b = curr.base || 100;
+          return acc + ((curr.puntos / b) * 100);
+        }, 0);
+
+        const puntosPorc = Math.min(puntosTotales100, 100);
+        const barraUniversalColor = puntosTotales100 >= 100 ? 'success' : (puntosTotales100 >= 70 ? '' : 'warning');
+        const estadoPonderacion = puntosTotales100 >= 100 ? '100%' : formatearPorcentaje(puntosTotales100);
+
+        const califs = calificacionesSemestre[mat] || { p1: null, p2: null, extraP3: 0 };
+        const pesos = pesosParciales[mat] || { p1: 33.33, p2: 33.33, p3: 33.33 };
+        const p1Val = califs.p1 !== null && califs.p1 !== undefined ? califs.p1 : "";
+        const p2Val = califs.p2 !== null && califs.p2 !== undefined ? califs.p2 : "";
+        const p3Info = calcularP3Materia(mat);
+        const p3Val = p3Info.puntosAcumulados;
+        const p1Num = parseFloat(p1Val);
+        const p2Num = parseFloat(p2Val);
+
+        const peso1 = valorRealPonderado(pesos.p1);
+        const peso2 = valorRealPonderado(pesos.p2);
+        const peso3 = valorRealPonderado(pesos.p3);
+
+        let sumaPonderada = 0;
+        let pesoAcumulado = 0;
+        if (!isNaN(p1Num)) { sumaPonderada += p1Num * peso1; pesoAcumulado += peso1; }
+        if (!isNaN(p2Num)) { sumaPonderada += p2Num * peso2; pesoAcumulado += peso2; }
+        if (p3Val !== null && p3Val !== undefined) { sumaPonderada += p3Val * peso3; pesoAcumulado += peso3; }
+
+        let saesMateriaBadge = '';
+        if (pesoAcumulado > 0) {
+          const promMateria = sumaPonderada / pesoAcumulado;
+          const saesData = calcularRedondeoSAES(promMateria);
+          saesMateriaBadge = `<span class="badge" style="border:1px solid #ffffff; color:#ffffff; background:#1e293b;">SAES: ${saesData.enteroSAES}</span>`;
+        }
+
+        return `
+          <div class="materia-bloque">
+            <div class="materia-header">
+              <div class="materia-title-row">
+                <span class="materia-titulo" style="color:${colorMat}; text-shadow:0 0 10px ${colorMat}66;">${mat.toUpperCase()}</span>
+                <div style="display:flex; gap:8px;">
+                  ${saesMateriaBadge}
+                  <span class="badge" style="border: 1px solid ${colorMat}; color:${colorMat}; background: ${colorMat}1a;">${estadoPonderacion}</span>
+                </div>
+              </div>
+              
+              <div class="materia-universal-bar">
+                <div class="bar-label-sub">
+                  <span>COBERTURA TOTAL DE EVALUACIÓN:</span>
+                  <span><strong class="pct-destacado" style="font-size:1.25rem;">${formatearPorcentaje(puntosTotales100)}</strong></span>
+                </div>
+                <div class="bar-container" style="height: 15px;">
+                  <div class="bar-fill ${barraUniversalColor}" style="width: ${puntosPorc}%;"></div>
+                </div>
+              </div>
+            </div>
+
+            ${tareasMat.map(t => {
+              const doom = calcularCuentaRegresiva(t.fecha, t.hora);
+              const doomClase = doom.zero ? 'countdown-timer zero' : (doom.urgente ? 'countdown-timer urgente' : 'countdown-timer');
+              const bloqueMateriaVisual = generarBloqueBarrasActividad(t, true);
+
+              return `
+                <div class="card ${t.completada ? 'completada' : ''}" style="margin-bottom:12px;">
+                  <div class="card-top">
+                    <span class="actividad-texto" style="font-weight:700; color:#ffffff;">${t.actividad}</span>
+                  </div>
+
+                  <div class="card-timing">
+                    <span class="fecha-destacada">${formatearFechaLarga(t.fecha)}</span>
+                    <span class="${doomClase}" data-fecha="${t.fecha}" data-hora="${t.hora || '00:00:00'}">${doom.texto}</span>
+                  </div>
+
+                  ${bloqueMateriaVisual}
+
+                  <div class="card-bottom">
+                    <div class="card-meta">
+                      <span>HORA: ${t.hora || '00:00:00'} HRS</span>
+                    </div>
+                    <div class="card-actions">
+                      ${t.urlClassroom ? `<button class="btn-32" style="border-color:var(--accent); color:var(--accent);" onclick="abrirClassroom('${t.urlClassroom}')">CLASSROOM ↗</button>` : ''}
+                      <button class="btn-32" onclick="toggleDesgloseDetalles('mat-${t.id}')">DETALLES ▾</button>
+                    </div>
+                  </div>
+
+                  <div id="drawer-detalles-mat-${t.id}" class="card-details-drawer" style="display:none;">
+                    <div class="details-top-bar">
+                      <span class="details-title-tag">DETALLES & NOTAS DE LA ACTIVIDAD:</span>
+                      <button class="btn-32 btn-32-primary" style="font-size:0.75rem; padding:4px 10px;" onclick="abrirEditorManualDirecto(${t.id})">EDITAR</button>
+                    </div>
+                    <div class="details-text-content">${t.detalles ? t.detalles : '<em>Sin notas registradas.</em>'}</div>
+                    ${t.urlClassroom ? `<div style="margin-top:8px;"><a href="${t.urlClassroom}" target="_blank" style="color:var(--accent); font-size:0.8rem; text-decoration:none;">🔗 ENLACE DIRECTO A CLASSROOM</a></div>` : ''}
+                  </div>
+                </div>
+              `;
+            }).join("")}
+          </div>
+        `;
+      }).join("") : "<p style='color:#ffffff; text-align:center; padding:24px;'>NO HAY REGISTROS POR ASIGNATURA</p>";
+
+      const evalP3El = document.getElementById("lista-evaluacion-p3");
+      const matrizBody = document.getElementById("tabla-matriz-body");
+
+      evalP3El.innerHTML = MATERIAS_OFICIALES.map(mat => {
+        const p3Info = calcularP3Materia(mat);
+        const tareasP3 = tareas.filter(t => normalizarMateria(t.materia).toLowerCase() === mat.toLowerCase() && (t.parcial === 3 || !t.parcial));
+        const colorBarra = p3Info.puntosAcumulados >= 80 ? 'success' : (p3Info.puntosAcumulados >= 60 ? 'warning' : '');
+        const colorMat = getColorMateria(mat);
+
+        return `
+          <div class="eval-materia-card">
+            <div class="eval-materia-header">
+              <div class="eval-materia-topline">
+                <span class="materia-tag" style="font-size:1.15rem; color:${colorMat}; text-shadow:0 0 10px ${colorMat}66;">${mat.toUpperCase()}</span>
+                <div class="eval-grade-display">
+                  <span>${formatearPorcentaje(p3Info.puntosAcumulados)}</span>
+                  ${p3Info.colchon > 0 ? `<span class="badge" style="border:1px solid #a855f7; color:#c084fc; background:rgba(168,85,247,0.15);">+${formatearPorcentaje(p3Info.colchon)} COLCHÓN</span>` : ''}
+                </div>
+              </div>
+              <div class="bar-container" style="height:16px; margin-top:6px;">
+                <div class="bar-fill ${colorBarra}" style="width: ${p3Info.puntosAcumulados}%;"></div>
+              </div>
+              <div class="coverage-meta-row">
+                <span>TOTAL PROGRAMADO: <span class="pct-destacado" style="font-size:0.95rem;">${formatearPorcentaje(p3Info.puntosProgramados)}</span></span>
+                <span>TOTAL EVALUADO: <span class="pct-destacado" style="font-size:0.95rem;">${formatearPorcentaje(p3Info.puntosAcumulados)}</span></span>
+              </div>
+            </div>
+
+            <div class="eval-activities-list">
+              ${tareasP3.length ? tareasP3.map(t => {
+                if (t.tipo === 'ordinal') {
+                  return `
+                    <div class="eval-act-card" style="border-left: 3px solid var(--amber);">
+                      <div class="eval-act-header">
+                        <strong style="color:#ffffff; font-size:0.95rem;">${t.actividad}</strong>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                          <span class="badge-ordinal">ORDINALES</span>
+                          <input type="checkbox" class="toggle-crt" ${t.completada ? 'checked' : ''} onclick="alternarTarea(${t.id})" title="Marcar entregada / pendiente">
+                        </div>
+                      </div>
+                      ${t.detalles ? `<div style="font-size:0.8rem; color:#cbd5e1; margin-top:4px;">${t.detalles}</div>` : ''}
+                    </div>
+                  `;
+                }
+
+                const puntosX = Number(t.puntos) || 20;
+                const baseX = Number(t.base) || 100;
+                
+                const califVal = (t.califX !== null && t.califX !== undefined) ? t.califX : "";
+                const califNum = parseFloat(califVal);
+                const hasGrade = !isNaN(califNum);
+                
+                const porcRendimientoX = hasGrade ? Math.min((califNum / puntosX) * 100, 100) : 0;
+                const aporteBase100 = hasGrade ? ((califNum / baseX) * 100) : 0;
+
+                const esBase100 = (baseX === 100);
+
+                if (esBase100) {
+                  return `
+                    <div class="eval-act-card">
+                      <div class="eval-act-header">
+                        <strong style="color:#ffffff; font-size:0.95rem;">${t.actividad}</strong>
+                      </div>
+
+                      <div class="dual-bars-wrapper" style="background:#090d17;">
+                        <div class="bar-row-block">
+                          <div class="bar-label-sub">
+                            <span>PORCENTAJE</span>
+                            <div style="display:flex; align-items:center; gap:6px;">
+                              <input type="number" class="input-mini" step="0.1" min="0" max="${puntosX}" value="${califVal}" placeholder="--" onchange="actualizarCalifTarea(${t.id}, this.value)">
+                              <span class="pct-destacado" style="font-size:1.2rem;">/ ${formatearPorcentaje(puntosX)}</span>
+                            </div>
+                          </div>
+                          <div class="bar-container">
+                            <div class="bar-fill" style="width: ${porcRendimientoX}%;"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  `;
+                } else {
+                  return `
+                    <div class="eval-act-card">
+                      <div class="eval-act-header">
+                        <strong style="color:#ffffff; font-size:0.95rem;">${t.actividad}</strong>
+                      </div>
+
+                      <div class="dual-bars-wrapper" style="background:#090d17;">
+                        <div class="bar-row-block">
+                          <div class="bar-label-sub">
+                            <span>BASE DEL PROFESOR</span>
+                            <div style="display:flex; align-items:center; gap:6px;">
+                              <input type="number" class="input-mini" step="0.1" min="0" max="${puntosX}" value="${califVal}" placeholder="--" onchange="actualizarCalifTarea(${t.id}, this.value)">
+                              <span>/ ${puntosX} PTS</span>
+                            </div>
+                          </div>
+                          <div class="bar-container">
+                            <div class="bar-fill bar-gold" style="width: ${porcRendimientoX}%;"></div>
+                          </div>
+                        </div>
+
+                        <div class="bar-row-block">
+                          <div class="bar-label-sub">
+                            <span>PORCENTAJE</span>
+                            <span class="pct-destacado" style="font-size:1.2rem;">${formatearPorcentaje(aporteBase100)}</span>
+                          </div>
+                          <div class="bar-container">
+                            <div class="bar-fill" style="width: ${Math.min(aporteBase100, 100)}%;"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  `;
+                }
+              }).join("") : "<p style='font-size:0.8rem; color:#64748b;'>Sin actividades registradas para el 3er parcial.</p>"}
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      let sumaEnterosSAES = 0;
+      let materiasEvaluadasCount = 0;
+
+      matrizBody.innerHTML = MATERIAS_OFICIALES.map(mat => {
+        const califs = calificacionesSemestre[mat] || { p1: null, p2: null, extraP3: 0 };
+        const pesos = pesosParciales[mat] || { p1: 33.33, p2: 33.33, p3: 33.33 };
+        const colorMat = getColorMateria(mat);
+
+        const p1Val = califs.p1 !== null && califs.p1 !== undefined ? califs.p1 : "";
+        const p2Val = califs.p2 !== null && califs.p2 !== undefined ? califs.p2 : "";
+        const p3Info = calcularP3Materia(mat);
+        const p3Val = p3Info.puntosAcumulados;
+
+        const p1Num = parseFloat(p1Val);
+        const p2Num = parseFloat(p2Val);
+
+        const peso1 = valorRealPonderado(pesos.p1);
+        const peso2 = valorRealPonderado(pesos.p2);
+        const peso3 = valorRealPonderado(pesos.p3);
+
+        let sumaPonderada = 0;
+        let pesoAcumulado = 0;
+
+        if (!isNaN(p1Num)) {
+          sumaPonderada += p1Num * peso1;
+          pesoAcumulado += peso1;
+        }
+        if (!isNaN(p2Num)) {
+          sumaPonderada += p2Num * peso2;
+          pesoAcumulado += peso2;
+        }
+        if (p3Val !== null && p3Val !== undefined) {
+          sumaPonderada += p3Val * peso3;
+          pesoAcumulado += peso3;
+        }
+
+        let saesHtml = "--";
+
+        if (pesoAcumulado > 0) {
+          const promMateria = sumaPonderada / pesoAcumulado;
+          const saesData = calcularRedondeoSAES(promMateria);
+          
+          sumaEnterosSAES += saesData.enteroSAES;
+          materiasEvaluadasCount++;
+
+          saesHtml = `
+            <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+              <span style="font-size:1.55rem; font-weight:700; color:#ffffff; line-height:1;">
+                ${saesData.enteroSAES}
+              </span>
+              <span style="font-size:0.75rem; color:#94a3b8; font-weight:600; letter-spacing:0.5px;">
+                REAL: ${saesData.prom10.toFixed(1)}
+              </span>
+            </div>
+          `;
+        }
+
+        return `
+          <tr>
+            <td style="font-weight:700;"><span class="materia-tag" style="color:${colorMat}; text-shadow:0 0 6px ${colorMat}55;">${mat.toUpperCase()}</span></td>
+            
+            <td>
+              <div class="partial-cell-content">
+                <input type="number" class="input-cell" step="1" min="0" value="${p1Val}" placeholder="--" onchange="actualizarNotaParcial('${mat}', 'p1', this.value)">
+                <div class="weight-box" title="Porcentaje del 1er Parcial">
+                  <span class="weight-label">VALOR</span>
+                  <input type="number" class="input-weight" step="0.1" min="1" max="100" value="${formatearPorcentajeNum(pesos.p1)}" onchange="actualizarPesoMateria('${mat}', 'p1', this.value)">
+                  <span class="weight-unit">%</span>
+                </div>
+              </div>
+            </td>
+
+            <td>
+              <div class="partial-cell-content">
+                <input type="number" class="input-cell" step="1" min="0" value="${p2Val}" placeholder="--" onchange="actualizarNotaParcial('${mat}', 'p2', this.value)">
+                <div class="weight-box" title="Porcentaje del 2do Parcial">
+                  <span class="weight-label">VALOR</span>
+                  <input type="number" class="input-weight" step="0.1" min="1" max="100" value="${formatearPorcentajeNum(pesos.p2)}" onchange="actualizarPesoMateria('${mat}', 'p2', this.value)">
+                  <span class="weight-unit">%</span>
+                </div>
+              </div>
+            </td>
+
+            <td>
+              <div class="partial-cell-content">
+                <div class="p3-grade-display">${formatearPorcentaje(p3Val)}</div>
+                <div class="weight-box" title="Porcentaje del 3er Parcial">
+                  <span class="weight-label">VALOR</span>
+                  <input type="number" class="input-weight" step="0.1" min="1" max="100" value="${formatearPorcentajeNum(pesos.p3)}" onchange="actualizarPesoMateria('${mat}', 'p3', this.value)">
+                  <span class="weight-unit">%</span>
+                </div>
+              </div>
+            </td>
+
+            <td style="text-align:center;">
+              ${saesHtml}
+            </td>
+          </tr>
+        `;
+      }).join("");
+
+      const hudNumero = document.getElementById("hud-promedio-general");
+      const hudEstado = document.getElementById("hud-estado-academico");
+
+      if (materiasEvaluadasCount > 0) {
+        const promGeneralSAES = (sumaEnterosSAES / materiasEvaluadasCount).toFixed(2);
+        hudNumero.innerText = promGeneralSAES;
+        hudEstado.innerText = `PROMEDIO OFICIAL SAES // SUMA DE ENTEROS: ${sumaEnterosSAES} PTS / ${materiasEvaluadasCount} ASIGNATURAS`;
+      } else {
+        hudNumero.innerText = "0.00";
+        hudEstado.innerText = "ESCALA PONDERADA OFICIAL // REDONDEO A ENTEROS POR ASIGNATURA";
+      }
+    }
+
+    render();
+  </script>
+</body>
+</html>
