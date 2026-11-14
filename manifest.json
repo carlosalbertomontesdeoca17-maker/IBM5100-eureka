@@ -1,6 +1,6 @@
 {
-  "name": "C.A.B. WORKSTATION",
-  "short_name": "C.A.B.",
+  "name": "STUDENT WORKSTATION",
+  "short_name": "Workstation",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0b0f19",
