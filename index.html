@@ -1434,12 +1434,197 @@
       window.open(url, '_blank');
     }
 
-    let tareas = JSON.parse(localStorage.getItem("tareas_workstation_luis")) || [
-      { id: 1, tipo: 'porcentual', materia: "Historia de México Contemporáneo I", actividad: "Infografia visita Museo de la Mujer", fecha: "2026-11-23", hora: "00:00:00", puntos: 10, base: 100, forzarDual: false, urlClassroom: "", califX: null, detalles: "Visita al Museo de la Mujer. Entregar infografía en formato digital con fuentes bibliográficas y fotografías.", completada: false, sincronizada: false, parcial: 3 },
-      { id: 2, tipo: 'porcentual', materia: "Historia de México Contemporáneo I", actividad: "Debate construccion de la nacion", fecha: "2026-11-30", hora: "00:00:00", puntos: 20, base: 100, forzarDual: false, urlClassroom: "", califX: null, detalles: "Debate sobre el proceso de construcción del Estado-Nación mexicano. Preparar argumentos por equipo.", completada: false, sincronizada: false, parcial: 3 },
-      { id: 3, tipo: 'porcentual', materia: "Álgebra", actividad: "Problemario Productos Notables", fecha: "2026-11-28", hora: "00:00:00", puntos: 20, base: 30, forzarDual: false, urlClassroom: "", califX: null, detalles: "Ejercicios de productos notables y factorización. Procedimiento completo a mano con hojas milimétricas.", completada: false, sincronizada: false, parcial: 3 },
-      { id: 4, tipo: 'ordinal', materia: "DHP", actividad: "Firma de cuaderno y glosario", fecha: "2026-11-29", hora: "00:00:00", puntos: 0, base: 0, forzarDual: false, urlClassroom: "", califX: null, detalles: "Revisión de cuaderno completo con firmas y glosario de términos cognitivos del 3er parcial.", completada: false, sincronizada: false, parcial: 3 }
+    const TAREAS_PRECARGADAS = [
+      {
+        "id": 1,
+        "tipo": "porcentual",
+        "materia": "Historia de México Contemporáneo I",
+        "actividad": "INFOGRAFIA VISITA AL MUSEO DE LA MUJER",
+        "fecha": "2026-11-25",
+        "hora": "21:00:00",
+        "puntos": 10,
+        "base": 100,
+        "forzarDual": false,
+        "urlClassroom": "https://classroom.google.com/u/0/c/ODc2Njk3NDkxMjQx/a/ODk4NTA3NzQ0NzY2/details?hl=es",
+        "detalles": "REALIZAR LA INFORMACION DE LA INFOGRAFIA",
+        "califX": null,
+        "completada": false,
+        "sincronizada": false,
+        "parcial": 3
+      },
+      {
+        "id": 2,
+        "tipo": "porcentual",
+        "materia": "Historia de México Contemporáneo I",
+        "actividad": "E.INTEGRADORA, CONCLUSION, PRESENTACION CANVA, GRUPAL",
+        "fecha": "2026-11-30",
+        "hora": "21:00:00",
+        "puntos": 20,
+        "base": 100,
+        "forzarDual": false,
+        "urlClassroom": "https://classroom.google.com/u/0/c/ODc2Njk3NDkxMjQx/a/ODk4NTEyMzU2MzMx/details?hl=es",
+        "detalles": "REALIZAR LA CONCLUSION GRUPAL.",
+        "califX": null,
+        "completada": false,
+        "sincronizada": false,
+        "parcial": 3
+      },
+      {
+        "id": 3,
+        "tipo": "porcentual",
+        "materia": "Historia de México Contemporáneo I",
+        "actividad": "ACTIVIDADES FORMATIVAS",
+        "fecha": "2026-11-30",
+        "hora": "21:00:00",
+        "puntos": 40,
+        "base": 100,
+        "forzarDual": false,
+        "urlClassroom": "https://classroom.google.com/c/ODc2Njk3NDkxMjQx/a/ODk5MjE4NDIwNTY3/details?hl=es",
+        "detalles": "",
+        "califX": null,
+        "completada": false,
+        "sincronizada": false,
+        "parcial": 3
+      },
+      {
+        "id": 4,
+        "tipo": "porcentual",
+        "materia": "Historia de México Contemporáneo I",
+        "actividad": "EXAMEN ESCRITO",
+        "fecha": "2026-12-07",
+        "hora": "00:00:00",
+        "puntos": 30,
+        "base": 100,
+        "forzarDual": false,
+        "urlClassroom": "",
+        "detalles": "",
+        "califX": null,
+        "completada": false,
+        "sincronizada": false,
+        "parcial": 3
+      },
+      {
+        "id": 1793932492465,
+        "tipo": "porcentual",
+        "materia": "Desarrollo Personal",
+        "actividad": "E.INTEGRADORA, INVESTIGACION, INFOGRAFIA Y CONLUSIÓN",
+        "fecha": "2026-11-30",
+        "hora": "23:59:00",
+        "puntos": 40,
+        "base": 100,
+        "forzarDual": false,
+        "urlClassroom": "https://classroom.google.com/u/0/c/ODE5OTQ2MTgwMTE5/a/ODk1OTE5MjQzNzYy/details?hl=es",
+        "detalles": "INVESTIGACION Y CONCLUSIONES: INDIVIDUAL, DIGITAL\nINFOGRAFÍA DEL PROYECTO PERSONAL EN SU CONTEXTO ACTUAL: GRUPAL,EN FISICO",
+        "califX": null,
+        "completada": false,
+        "sincronizada": false,
+        "parcial": 3
+      },
+      {
+        "id": 1793933225109,
+        "tipo": "porcentual",
+        "materia": "Desarrollo Personal",
+        "actividad": "PROYECTO AULA MAPA DE CONTEXTO EN FISICO",
+        "fecha": "2026-11-19",
+        "hora": "23:59:00",
+        "puntos": 10,
+        "base": 100,
+        "forzarDual": false,
+        "urlClassroom": "https://classroom.google.com/u/0/c/ODE5OTQ2MTgwMTE5/a/ODk3OTA4NjA3MDc3/details?hl=es",
+        "detalles": "HACER UN MAPA DE CONTEXTO SOBRE LAS REDES SOCIALES Y LA VIDA ESTUDIANTIL",
+        "califX": null,
+        "completada": false,
+        "sincronizada": false,
+        "parcial": 3
+      },
+      {
+        "id": 1794029854001,
+        "tipo": "porcentual",
+        "materia": "Expresión Oral y Escrita I",
+        "actividad": "E.INTEGRADORA, EXPOSICIÓN",
+        "fecha": "2026-11-25",
+        "hora": "00:00:00",
+        "puntos": 35,
+        "base": 100,
+        "forzarDual": false,
+        "urlClassroom": "https://classroom.google.com/c/ODc2NTI1MDkzNDUy/p/ODk4Nzg5ODM1Nzk2/details?hl=es",
+        "detalles": "TEMAS:\ncualidades de la expresión oral \ntécnicas de expresión oral \nElementos de las técnicas de exposición",
+        "califX": null,
+        "completada": false,
+        "sincronizada": false,
+        "parcial": 3
+      },
+      {
+        "id": 1794030652499,
+        "tipo": "porcentual",
+        "materia": "Expresión Oral y Escrita I",
+        "actividad": "EXAMEN ESCRITO",
+        "fecha": "2026-11-27",
+        "hora": "00:00:00",
+        "puntos": 30,
+        "base": 100,
+        "forzarDual": false,
+        "urlClassroom": "",
+        "detalles": "",
+        "califX": null,
+        "completada": false,
+        "sincronizada": false,
+        "parcial": 3
+      },
+      {
+        "id": 1794365892663,
+        "tipo": "porcentual",
+        "materia": "Filosofía I",
+        "actividad": "EXTRA, MUSEO DE LA MEMORIA Y TOLERANCIA",
+        "fecha": "2026-11-27",
+        "hora": "13:00:00",
+        "puntos": 15,
+        "base": 100,
+        "forzarDual": false,
+        "urlClassroom": "https://classroom.google.com/c/ODc2NDUwNDcwMzUy/p/ODk4NzU0MTU3OTU1/details?hl=es",
+        "detalles": "1.está frente la alameda\n2. Se contesta con tinta AZUL \n3. Tomar una foto donde se encuentra Gilberto Bosque para anexar a su trabajo\n4. Deberán pegar el ticket / boleto, INDIVIDUAL.",
+        "califX": null,
+        "completada": false,
+        "sincronizada": false,
+        "parcial": 3
+      },
+      {
+        "id": 1794438504916,
+        "tipo": "porcentual",
+        "materia": "Filosofía I",
+        "actividad": "PROYECTO AULA REFELXIÓN DEL LIBRO",
+        "fecha": "2026-11-20",
+        "hora": "14:00:00",
+        "puntos": 10,
+        "base": 100,
+        "forzarDual": false,
+        "urlClassroom": "https://classroom.google.com/c/ODc2NDUwNDcwMzUy/p/ODk5MDA2MzQzMjc4/details?hl=es",
+        "detalles": "",
+        "califX": null,
+        "completada": false,
+        "sincronizada": false,
+        "parcial": 3
+      },
+      {
+        "id": 1794525272376,
+        "tipo": "porcentual",
+        "materia": "Filosofía I",
+        "actividad": "EXPOSICIÓN DILEMA ETICO",
+        "fecha": "2026-11-24",
+        "hora": "09:00:00",
+        "puntos": 70,
+        "base": 100,
+        "forzarDual": false,
+        "urlClassroom": "https://classroom.google.com/c/ODc2NDUwNDcwMzUy/p/ODk5MDEwNjIxODg1/details?hl=es",
+        "detalles": "",
+        "califX": null,
+        "completada": false,
+        "sincronizada": false,
+        "parcial": 3
+      }
     ];
+
+    let tareas = JSON.parse(localStorage.getItem("tareas_workstation_luis_v2")) || TAREAS_PRECARGADAS;
 
     tareas = tareas.map(t => ({
       ...t,
@@ -1454,7 +1639,7 @@
       califX: t.califX !== undefined ? t.califX : (t.notaObtenida !== undefined ? t.notaObtenida : null)
     }));
 
-    let calificacionesSemestre = JSON.parse(localStorage.getItem("calif_semestre_workstation_luis")) || {};
+    let calificacionesSemestre = JSON.parse(localStorage.getItem("calif_semestre_workstation_luis_v2")) || {};
 
     for (let k in calificacionesSemestre) {
       const norm = normalizarMateria(k);
@@ -1477,11 +1662,23 @@
       }
     });
 
-    let pesosParciales = JSON.parse(localStorage.getItem("pesos_parciales_workstation_luis")) || {};
+    const PESOS_DEFAULT_GRUPO = {
+      "Orientación Juvenil y Profesional I": { p1: 33.33, p2: 33.33, p3: 33.33 },
+      "Historia de México Contemporáneo I": { p1: 33.33, p2: 33.33, p3: 33.33 },
+      "Desarrollo Personal": { p1: 30, p2: 40, p3: 30 },
+      "Álgebra": { p1: 30, p2: 30, p3: 40 },
+      "Filosofía I": { p1: 33.33, p2: 33.33, p3: 33.33 },
+      "Expresión Oral y Escrita I": { p1: 33.33, p2: 33.33, p3: 33.33 },
+      "Computación Básica I": { p1: 33.33, p2: 33.33, p3: 33.33 },
+      "Inglés I": { p1: 33.33, p2: 33.33, p3: 33.33 },
+      "DHP": { p1: 33.33, p2: 33.33, p3: 33.33 }
+    };
+
+    let pesosParciales = JSON.parse(localStorage.getItem("pesos_parciales_workstation_luis_v2")) || PESOS_DEFAULT_GRUPO;
 
     MATERIAS_OFICIALES.forEach(m => {
       if (!pesosParciales[m]) {
-        pesosParciales[m] = { p1: 33.33, p2: 33.33, p3: 33.33 };
+        pesosParciales[m] = PESOS_DEFAULT_GRUPO[m] || { p1: 33.33, p2: 33.33, p3: 33.33 };
       } else {
         ['p1', 'p2', 'p3'].forEach(pk => {
           if (Math.abs(pesosParciales[m][pk] - 33.34) < 0.1 || Math.abs(pesosParciales[m][pk] - 33.4) < 0.1 || Math.abs(pesosParciales[m][pk] - 33.3) < 0.1) {
@@ -1498,9 +1695,9 @@
     let filtroActual = 'todas';
 
     function guardarLocal(origenRemoto = false) {
-      localStorage.setItem("tareas_workstation_luis", JSON.stringify(tareas));
-      localStorage.setItem("calif_semestre_workstation_luis", JSON.stringify(calificacionesSemestre));
-      localStorage.setItem("pesos_parciales_workstation_luis", JSON.stringify(pesosParciales));
+      localStorage.setItem("tareas_workstation_luis_v2", JSON.stringify(tareas));
+      localStorage.setItem("calif_semestre_workstation_luis_v2", JSON.stringify(calificacionesSemestre));
+      localStorage.setItem("pesos_parciales_workstation_luis_v2", JSON.stringify(pesosParciales));
 
       if (!origenRemoto && db) {
         db.collection("workstation").doc("datos_academicos").set({
